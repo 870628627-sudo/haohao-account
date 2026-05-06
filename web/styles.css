@@ -439,6 +439,10 @@ button {
   color: #fff9f1;
 }
 
+.top-period-tabs {
+  margin-bottom: 18px;
+}
+
 .stats-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

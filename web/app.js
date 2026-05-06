@@ -37,18 +37,6 @@ function periodDateInput(id) {
   return `<input class="input date-compact" id="${id}" type="month" value="${state.month}" />`
 }
 
-function shortPeriodName(period) {
-  return ({ month: '月度', year: '年度' })[period] || '月度'
-}
-
-function periodTabs() {
-  return `
-    <div class="period-tabs compact">
-      ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
-    </div>
-  `
-}
-
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: {
@@ -265,15 +253,15 @@ function renderApp() {
           </section>
 
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
+            <div class="period-tabs top-period-tabs">
+              ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
+            </div>
             <div class="section-title">
               <div>
                 <h3>${periodName(state.period)}</h3>
                 <p class="muted">${summary.label || state.month} · 豪豪替你把账算明白了</p>
               </div>
               ${periodDateInput('statsMonthInput')}
-            </div>
-            <div class="period-tabs compact">
-              ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${shortPeriodName(period)}</button>`).join('')}
             </div>
             <div class="stats-summary">
               <div class="stat-tile primary"><span>总支出</span><strong>¥${money(summary.expense)}</strong></div>
