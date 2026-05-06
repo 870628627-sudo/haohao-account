@@ -226,6 +226,362 @@ data/haohudget.sqlite
 
 如果只是给朋友或少量用户使用，推荐先用 PWA 方式：部署 HTTPS 链接，然后让用户添加到主屏幕。
 
+## 阿里云从购买到部署
+
+豪豪记账是 Node.js 服务端应用，带 SQLite 数据库。不要只买 OSS 静态网站托管，也不要只上传 `web/` 文件夹；必须有一台能长期运行 Node.js 的服务器。
+
+### 方案选择
+
+推荐购买：
+
+```text
+阿里云轻量应用服务器
+```
+
+适合原因：
+
+- 比 ECS 入门简单。
+- 自带防火墙、安全管理、快照等轻量运维能力。
+- 适合个人项目、小型网页应用、早期测试。
+
+如果你准备长期正式运营，也可以购买 ECS，但第一版用轻量应用服务器更省心。
+
+### 购买服务器
+
+1. 登录阿里云控制台。
+2. 搜索「轻量应用服务器」。
+3. 点击「创建服务器」。
+4. 地域选择：
+
+```text
+如果主要给中国内地用户使用：选杭州、上海、深圳、北京等中国内地域。
+如果暂时不想备案：选中国香港或海外地域。
+```
+
+注意：如果域名解析到中国内地服务器并对外提供网站服务，需要做 ICP 备案。未备案可能无法通过域名正常访问。
+
+5. 镜像建议选择：
+
+```text
+Ubuntu 22.04 / Ubuntu 24.04
+```
+
+不建议直接选旧版 Node.js 应用镜像，因为本项目使用 Node 内置 SQLite，需要 Node.js 22 或更高版本。
+
+6. 套餐建议：
+
+```text
+1核 1G 或 2核 2G 都可以起步。
+```
+
+早期个人使用，1核1G 足够；如果多人用、访问量增长，再升级。
+
+7. 购买完成后，进入服务器详情页，记下：
+
+```text
+公网 IP
+登录用户名，一般是 root
+```
+
+### 放行端口
+
+进入轻量应用服务器的「防火墙」或「安全组」配置，放行：
+
+```text
+22    SSH 登录
+80    HTTP
+443   HTTPS
+5177  临时调试用，上线后可关闭
+```
+
+### 连接服务器
+
+Windows 可以用：
+
+- 阿里云控制台网页远程连接
+- PowerShell SSH
+- Xshell / Termius / MobaXterm
+
+PowerShell 示例：
+
+```bash
+ssh root@你的服务器公网IP
+```
+
+### 安装运行环境
+
+进入服务器后执行：
+
+```bash
+apt update
+apt install -y curl git nginx
+```
+
+安装 Node.js 22：
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+```
+
+检查版本：
+
+```bash
+node -v
+npm -v
+```
+
+Node 版本建议显示：
+
+```text
+v22.x.x
+```
+
+### 上传项目
+
+推荐用 GitHub 部署。
+
+先在服务器创建目录：
+
+```bash
+mkdir -p /www
+cd /www
+```
+
+如果你的项目已经上传 GitHub：
+
+```bash
+git clone https://github.com/你的用户名/haohudget.git
+cd haohudget
+```
+
+如果你还没上传 GitHub，可以先把本地项目压缩成 zip，用阿里云控制台、WinSCP 或 scp 上传到 `/www/haohudget`。
+
+### 安装依赖并试运行
+
+```bash
+cd /www/haohudget
+npm install
+npm start
+```
+
+看到类似输出说明服务启动：
+
+```text
+豪豪记账网页应用已启动：http://localhost:5177
+SQLite 数据库：/www/haohudget/data/haohudget.sqlite
+```
+
+此时在服务器里测试：
+
+```bash
+curl http://127.0.0.1:5177
+```
+
+如果返回 HTML，说明 Node 服务正常。
+
+也可以临时访问：
+
+```text
+http://你的服务器公网IP:5177
+```
+
+如果打不开，检查 5177 端口是否放行。
+
+### 用 PM2 长期运行
+
+安装 PM2：
+
+```bash
+npm install -g pm2
+```
+
+启动项目：
+
+```bash
+cd /www/haohudget
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup
+```
+
+查看状态：
+
+```bash
+pm2 status
+pm2 logs haohudget
+```
+
+重启：
+
+```bash
+pm2 restart haohudget
+```
+
+### 配置 Nginx 反向代理
+
+新建配置文件：
+
+```bash
+nano /etc/nginx/sites-available/haohudget
+```
+
+写入：
+
+```nginx
+server {
+    listen 80;
+    server_name 你的域名;
+
+    location / {
+        proxy_pass http://127.0.0.1:5177;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+启用配置：
+
+```bash
+ln -s /etc/nginx/sites-available/haohudget /etc/nginx/sites-enabled/haohudget
+nginx -t
+systemctl reload nginx
+```
+
+现在访问：
+
+```text
+http://你的域名
+```
+
+应该能看到豪豪记账。
+
+### 域名解析
+
+如果你有域名：
+
+1. 进入阿里云「云解析 DNS」。
+2. 找到你的域名。
+3. 添加解析记录：
+
+```text
+记录类型：A
+主机记录：@ 或 www
+记录值：你的服务器公网 IP
+TTL：默认
+```
+
+常见写法：
+
+```text
+haohudget.com      -> A -> 服务器公网 IP
+www.haohudget.com  -> A -> 服务器公网 IP
+```
+
+### 配置 HTTPS
+
+iPhone 添加到主屏幕和 PWA 体验建议必须使用 HTTPS。
+
+方式一：使用阿里云 SSL 证书。
+
+1. 进入阿里云「SSL 证书」。
+2. 申请免费或付费证书。
+3. 域名验证通过后，下载 Nginx 证书。
+4. 上传到服务器，例如：
+
+```text
+/etc/nginx/cert/your-domain.pem
+/etc/nginx/cert/your-domain.key
+```
+
+5. 修改 Nginx：
+
+```nginx
+server {
+    listen 80;
+    server_name 你的域名;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name 你的域名;
+
+    ssl_certificate /etc/nginx/cert/your-domain.pem;
+    ssl_certificate_key /etc/nginx/cert/your-domain.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:5177;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+重载：
+
+```bash
+nginx -t
+systemctl reload nginx
+```
+
+最终访问：
+
+```text
+https://你的域名
+```
+
+### iPhone 用户使用
+
+部署 HTTPS 后，把链接发给 iPhone 用户：
+
+```text
+https://你的域名
+```
+
+用户操作：
+
+1. 用 Safari 打开。
+2. 点击底部分享按钮。
+3. 选择「添加到主屏幕」。
+4. 桌面会出现「豪豪记账」图标。
+5. 之后从桌面图标打开，体验接近 App。
+
+### 日常更新代码
+
+如果用 GitHub：
+
+```bash
+cd /www/haohudget
+git pull
+npm install
+pm2 restart haohudget
+```
+
+### 数据备份
+
+数据库文件：
+
+```text
+/www/haohudget/data/haohudget.sqlite
+```
+
+建议定期备份：
+
+```bash
+mkdir -p /backup/haohudget
+cp /www/haohudget/data/haohudget.sqlite /backup/haohudget/haohudget-$(date +%F).sqlite
+```
+
+更新代码前也先备份这个文件。
+
 ## 当前已实现
 
 - 首页月度概览
