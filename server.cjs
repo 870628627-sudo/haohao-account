@@ -200,6 +200,52 @@ function normalizeMonth(value = '') {
   return /^\d{4}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 7)
 }
 
+function normalizePeriod(value = '') {
+  return ['month', 'quarter', 'year'].includes(value) ? value : 'month'
+}
+
+function pad(value) {
+  return String(value).padStart(2, '0')
+}
+
+function periodRange(period, monthValue) {
+  const month = normalizeMonth(monthValue)
+  const year = Number(month.slice(0, 4))
+  const monthIndex = Number(month.slice(5, 7)) - 1
+
+  if (period === 'year') {
+    return {
+      start: `${year}-01-01`,
+      end: `${year + 1}-01-01`,
+      label: `${year} 年`,
+      group: 'month'
+    }
+  }
+
+  if (period === 'quarter') {
+    const quarter = Math.floor(monthIndex / 3) + 1
+    const startMonth = (quarter - 1) * 3 + 1
+    const endMonth = startMonth + 3
+    const endYear = endMonth > 12 ? year + 1 : year
+    const normalizedEndMonth = endMonth > 12 ? endMonth - 12 : endMonth
+    return {
+      start: `${year}-${pad(startMonth)}-01`,
+      end: `${endYear}-${pad(normalizedEndMonth)}-01`,
+      label: `${year} Q${quarter}`,
+      group: 'month'
+    }
+  }
+
+  const endYear = monthIndex === 11 ? year + 1 : year
+  const endMonth = monthIndex === 11 ? 1 : monthIndex + 2
+  return {
+    start: `${year}-${pad(monthIndex + 1)}-01`,
+    end: `${endYear}-${pad(endMonth)}-01`,
+    label: month,
+    group: 'day'
+  }
+}
+
 function normalizeDate(value = '') {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 10)
 }
@@ -346,43 +392,58 @@ async function handleApi(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/summary') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
-    const income = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND month = ? AND type = 'income'")
-      .get(user.id, month).total
-    const expense = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND month = ? AND type = 'expense'")
-      .get(user.id, month).total
+    const period = normalizePeriod(url.searchParams.get('period') || '')
+    const range = periodRange(period, month)
+    const income = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'income'")
+      .get(user.id, range.start, range.end).total
+    const expense = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'")
+      .get(user.id, range.start, range.end).total
     const budget = db.prepare('SELECT * FROM budgets WHERE user_id = ? AND book_id = ? AND month = ?')
       .get(user.id, 'personal', month)
     const ranking = db.prepare(`
       SELECT category, SUM(amount) AS amount
       FROM bills
-      WHERE user_id = ? AND month = ? AND type = 'expense'
+      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
       GROUP BY category
       ORDER BY amount DESC
-    `).all(user.id, month)
+    `).all(user.id, range.start, range.end)
+    const trendExpr = range.group === 'day' ? 'date' : "substr(date, 1, 7)"
+    const trend = db.prepare(`
+      SELECT ${trendExpr} AS label, COALESCE(SUM(amount), 0) AS amount
+      FROM bills
+      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
+      GROUP BY label
+      ORDER BY label ASC
+    `).all(user.id, range.start, range.end)
     const budgetTotal = budget ? budget.total : 0
 
     json(res, 200, {
       month,
+      period,
+      label: range.label,
       income,
       expense,
       balance: income - expense,
       budget: budgetTotal,
       budgetLeft: budgetTotal - expense,
       usedRate: budgetTotal ? expense / budgetTotal : 0,
-      ranking
+      ranking,
+      trend
     })
     return
   }
 
   if (req.method === 'GET' && url.pathname === '/api/bills') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
+    const period = normalizePeriod(url.searchParams.get('period') || '')
+    const range = periodRange(period, month)
     const bills = db.prepare(`
       SELECT *
       FROM bills
-      WHERE user_id = ? AND month = ?
+      WHERE user_id = ? AND date >= ? AND date < ?
       ORDER BY date DESC, created_at DESC
-    `).all(user.id, month).map(mapBill)
-    json(res, 200, { bills })
+    `).all(user.id, range.start, range.end).map(mapBill)
+    json(res, 200, { bills, period, label: range.label })
     return
   }
 

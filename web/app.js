@@ -6,6 +6,7 @@ const fixedCategories = ['水电燃气', '房租', '话费网费', '日用品', 
 const state = {
   user: null,
   month: new Date().toISOString().slice(0, 7),
+  period: 'month',
   billType: 'expense',
   selectedCategory: '午餐',
   activeView: 'home',
@@ -18,6 +19,38 @@ const app = document.querySelector('#app')
 
 function money(value) {
   return Number(value || 0).toFixed(2)
+}
+
+function periodName(period) {
+  return ({ month: '月度', quarter: '季度', year: '年度' })[period] || '月度'
+}
+
+function renderLineChart(trend = []) {
+  const width = 640
+  const height = 220
+  const padding = 28
+  const points = trend.length ? trend : [{ label: '暂无', amount: 0 }]
+  const max = Math.max(...points.map((item) => Number(item.amount || 0)), 1)
+  const step = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0
+  const coords = points.map((item, index) => {
+    const x = points.length > 1 ? padding + index * step : width / 2
+    const y = height - padding - (Number(item.amount || 0) / max) * (height - padding * 2)
+    return { ...item, x, y }
+  })
+  const path = coords.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ')
+
+  return `
+    <div class="chart-wrap">
+      <svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="支出趋势折线图">
+        <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="chart-axis"></line>
+        <path d="${path}" class="chart-line"></path>
+        ${coords.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4.5" class="chart-dot"></circle>`).join('')}
+      </svg>
+      <div class="chart-labels">
+        ${coords.filter((_, index) => index === 0 || index === coords.length - 1 || coords.length <= 6).map((point) => `<span>${point.label.slice(5) || point.label}</span>`).join('')}
+      </div>
+    </div>
+  `
 }
 
 async function api(path, options = {}) {
@@ -111,7 +144,7 @@ function renderAuth(mode = 'login') {
 }
 
 function renderApp() {
-  const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [] }
+  const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [], trend: [], label: state.month }
   const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
   const categories = state.billType === 'income' ? incomeCategories : expenseCategories
   if (!categories.includes(state.selectedCategory)) {
@@ -152,8 +185,11 @@ function renderApp() {
 
           <section class="card view-section ${state.activeView === 'bills' ? 'active-view' : ''}" data-view="bills">
             <div class="section-title">
-              <h3>最近账单</h3>
+              <h3>${periodName(state.period)}账单</h3>
               <input class="input" id="monthInput" type="month" value="${state.month}" style="max-width: 170px" />
+            </div>
+            <div class="period-tabs">
+              ${['month', 'quarter', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
             </div>
             <div class="list">
               ${state.bills.length ? state.bills.slice(0, 12).map((bill) => `
@@ -209,13 +245,17 @@ function renderApp() {
           </section>
 
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
-            <div class="section-title"><h3>月度预算</h3><strong>${Math.round(summary.usedRate * 100)}%</strong></div>
-            <div class="bar"><span style="width:${Math.min(100, Math.round(summary.usedRate * 100))}%"></span></div>
-            <p class="muted">预算 ¥${money(summary.budget)}，剩余 ¥${money(summary.budgetLeft)}</p>
-            <form class="form" id="budgetForm">
-              <input class="input" name="total" type="number" min="0" step="0.01" placeholder="设置本月总预算" value="${summary.budget || ''}" />
-              <button class="btn secondary" type="submit">保存预算</button>
-            </form>
+            <div class="section-title">
+              <div>
+                <h3>${periodName(state.period)}支出趋势</h3>
+                <p class="muted">${summary.label || state.month} · 总支出 ¥${money(summary.expense)}</p>
+              </div>
+              <input class="input" id="statsMonthInput" type="month" value="${state.month}" style="max-width: 170px" />
+            </div>
+            <div class="period-tabs">
+              ${['month', 'quarter', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
+            </div>
+            ${renderLineChart(summary.trend)}
           </section>
 
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
@@ -229,6 +269,16 @@ function renderApp() {
                 </div>
               `).join('') : '<p class="muted">暂无排行，豪豪暂时无瓜可吃。</p>'}
             </div>
+          </section>
+
+          <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
+            <div class="section-title"><h3>月度预算</h3><strong>${Math.round(summary.usedRate * 100)}%</strong></div>
+            <div class="bar"><span style="width:${Math.min(100, Math.round(summary.usedRate * 100))}%"></span></div>
+            <p class="muted">预算 ¥${money(summary.budget)}，剩余 ¥${money(summary.budgetLeft)}</p>
+            <form class="form budget-form" id="budgetForm">
+              <input class="input" name="total" type="number" min="0" step="0.01" placeholder="设置本月总预算" value="${summary.budget || ''}" />
+              <button class="btn secondary" type="submit">保存预算</button>
+            </form>
           </section>
 
           <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
@@ -283,6 +333,18 @@ function bindAppEvents() {
   document.querySelector('#monthInput').addEventListener('change', async (event) => {
     state.month = event.target.value
     await loadDashboard()
+  })
+
+  document.querySelector('#statsMonthInput').addEventListener('change', async (event) => {
+    state.month = event.target.value
+    await loadDashboard()
+  })
+
+  document.querySelectorAll('[data-period]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      state.period = button.dataset.period
+      await loadDashboard()
+    })
   })
 
   document.querySelectorAll('[data-type]').forEach((button) => {
@@ -352,8 +414,8 @@ function bindAppEvents() {
 
 async function loadDashboard() {
   const [summary, bills, fixedItems] = await Promise.all([
-    api(`/api/summary?month=${encodeURIComponent(state.month)}`),
-    api(`/api/bills?month=${encodeURIComponent(state.month)}`),
+    api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`),
+    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`),
     api('/api/fixed-items')
   ])
   state.summary = summary
