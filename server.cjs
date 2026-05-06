@@ -201,7 +201,7 @@ function normalizeMonth(value = '') {
 }
 
 function normalizePeriod(value = '') {
-  return ['month', 'quarter', 'year'].includes(value) ? value : 'month'
+  return ['month', 'year'].includes(value) ? value : 'month'
 }
 
 function pad(value) {
@@ -218,20 +218,6 @@ function periodRange(period, monthValue) {
       start: `${year}-01-01`,
       end: `${year + 1}-01-01`,
       label: `${year} 年`,
-      group: 'month'
-    }
-  }
-
-  if (period === 'quarter') {
-    const quarter = Math.floor(monthIndex / 3) + 1
-    const startMonth = (quarter - 1) * 3 + 1
-    const endMonth = startMonth + 3
-    const endYear = endMonth > 12 ? year + 1 : year
-    const normalizedEndMonth = endMonth > 12 ? endMonth - 12 : endMonth
-    return {
-      start: `${year}-${pad(startMonth)}-01`,
-      end: `${endYear}-${pad(normalizedEndMonth)}-01`,
-      label: `${year} Q${quarter}`,
       group: 'month'
     }
   }
@@ -407,15 +393,17 @@ async function handleApi(req, res) {
       GROUP BY category
       ORDER BY amount DESC
     `).all(user.id, range.start, range.end)
-    const trendExpr = range.group === 'day' ? 'date' : "substr(date, 1, 7)"
-    const trend = db.prepare(`
-      SELECT ${trendExpr} AS label, COALESCE(SUM(amount), 0) AS amount
+    const budgetTotal = budget ? budget.total : 0
+    const daysInPeriod = period === 'year' ? 12 : new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()
+    const highestExpense = db.prepare(`
+      SELECT category, amount, date, note
       FROM bills
       WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
-      GROUP BY label
-      ORDER BY label ASC
-    `).all(user.id, range.start, range.end)
-    const budgetTotal = budget ? budget.total : 0
+      ORDER BY amount DESC
+      LIMIT 1
+    `).get(user.id, range.start, range.end) || null
+    const billCount = db.prepare('SELECT COUNT(*) AS count FROM bills WHERE user_id = ? AND date >= ? AND date < ?')
+      .get(user.id, range.start, range.end).count
 
     json(res, 200, {
       month,
@@ -428,7 +416,9 @@ async function handleApi(req, res) {
       budgetLeft: budgetTotal - expense,
       usedRate: budgetTotal ? expense / budgetTotal : 0,
       ranking,
-      trend
+      averageExpense: expense / Math.max(1, daysInPeriod),
+      highestExpense,
+      billCount
     })
     return
   }

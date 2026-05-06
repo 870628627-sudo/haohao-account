@@ -22,33 +22,13 @@ function money(value) {
 }
 
 function periodName(period) {
-  return ({ month: '月度', quarter: '季度', year: '年度' })[period] || '月度'
+  return ({ month: '月度账单', year: '年度账单' })[period] || '月度账单'
 }
 
-function renderLineChart(trend = []) {
-  const width = 640
-  const height = 220
-  const padding = 28
-  const points = trend.length ? trend : [{ label: '暂无', amount: 0 }]
-  const max = Math.max(...points.map((item) => Number(item.amount || 0)), 1)
-  const step = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0
-  const coords = points.map((item, index) => {
-    const x = points.length > 1 ? padding + index * step : width / 2
-    const y = height - padding - (Number(item.amount || 0) / max) * (height - padding * 2)
-    return { ...item, x, y }
-  })
-  const path = coords.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(' ')
-
+function periodTabs() {
   return `
-    <div class="chart-wrap">
-      <svg class="line-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="支出趋势折线图">
-        <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" class="chart-axis"></line>
-        <path d="${path}" class="chart-line"></path>
-        ${coords.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="4.5" class="chart-dot"></circle>`).join('')}
-      </svg>
-      <div class="chart-labels">
-        ${coords.filter((_, index) => index === 0 || index === coords.length - 1 || coords.length <= 6).map((point) => `<span>${point.label.slice(5) || point.label}</span>`).join('')}
-      </div>
+    <div class="period-tabs compact">
+      ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
     </div>
   `
 }
@@ -76,6 +56,29 @@ function toast(message) {
   el.textContent = message
   document.body.appendChild(el)
   setTimeout(() => el.remove(), 2600)
+}
+
+function judge(message) {
+  const old = document.querySelector('.judge')
+  if (old) old.remove()
+  const el = document.createElement('div')
+  el.className = 'judge'
+  el.innerHTML = `
+    <div class="judge-card">
+      <img src="${bearSrc}" alt="豪豪小熊" />
+      <div>
+        <strong>豪豪审判</strong>
+        <p>${message}</p>
+      </div>
+      <button type="button">知道了</button>
+    </div>
+  `
+  document.body.appendChild(el)
+  el.querySelector('button').addEventListener('click', () => el.remove())
+  el.addEventListener('click', (event) => {
+    if (event.target === el) el.remove()
+  })
+  setTimeout(() => el.remove(), 5200)
 }
 
 function bearComment(record) {
@@ -144,7 +147,7 @@ function renderAuth(mode = 'login') {
 }
 
 function renderApp() {
-  const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [], trend: [], label: state.month }
+  const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [], label: state.month, averageExpense: 0, highestExpense: null, billCount: 0 }
   const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
   const categories = state.billType === 'income' ? incomeCategories : expenseCategories
   if (!categories.includes(state.selectedCategory)) {
@@ -185,12 +188,10 @@ function renderApp() {
 
           <section class="card view-section ${state.activeView === 'bills' ? 'active-view' : ''}" data-view="bills">
             <div class="section-title">
-              <h3>${periodName(state.period)}账单</h3>
+              <h3>${periodName(state.period)}</h3>
               <input class="input" id="monthInput" type="month" value="${state.month}" style="max-width: 170px" />
             </div>
-            <div class="period-tabs">
-              ${['month', 'quarter', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
-            </div>
+            ${periodTabs()}
             <div class="list">
               ${state.bills.length ? state.bills.slice(0, 12).map((bill) => `
                 <div class="bill">
@@ -247,15 +248,20 @@ function renderApp() {
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
             <div class="section-title">
               <div>
-                <h3>${periodName(state.period)}支出趋势</h3>
-                <p class="muted">${summary.label || state.month} · 总支出 ¥${money(summary.expense)}</p>
+                <h3>${periodName(state.period)}</h3>
+                <p class="muted">${summary.label || state.month} · 豪豪替你把账算明白了</p>
               </div>
               <input class="input" id="statsMonthInput" type="month" value="${state.month}" style="max-width: 170px" />
             </div>
-            <div class="period-tabs">
-              ${['month', 'quarter', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
+            ${periodTabs()}
+            <div class="stats-summary">
+              <div class="stat-tile primary"><span>总支出</span><strong>¥${money(summary.expense)}</strong></div>
+              <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(summary.income)}</strong></div>
+              <div class="stat-tile"><span>结余</span><strong class="${summary.balance >= 0 ? 'income' : 'expense'}">¥${money(summary.balance)}</strong></div>
+              <div class="stat-tile"><span>${state.period === 'year' ? '月均支出' : '日均支出'}</span><strong>¥${money(summary.averageExpense)}</strong></div>
+              <div class="stat-tile"><span>记账笔数</span><strong>${summary.billCount || 0}</strong></div>
+              <div class="stat-tile"><span>最高单笔</span><strong>${summary.highestExpense ? `¥${money(summary.highestExpense.amount)}` : '暂无'}</strong></div>
             </div>
-            ${renderLineChart(summary.trend)}
           </section>
 
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
@@ -370,7 +376,7 @@ function bindAppEvents() {
     payload.category = state.selectedCategory
     try {
       const data = await api('/api/bills', { method: 'POST', body: JSON.stringify(payload) })
-      toast(bearComment(data.bill))
+      judge(bearComment(data.bill))
       state.month = data.bill.month
       state.activeView = 'bills'
       await loadDashboard()
