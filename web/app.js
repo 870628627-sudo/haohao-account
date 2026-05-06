@@ -1,5 +1,5 @@
 const bearSrc = '/assets/bear-ledger.jpg'
-const expenseCategories = ['早餐', '午餐', '晚餐', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '购物', '人情往来', '其他']
+const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '话费网费', '日用品', '会员订阅', '其他']
 
@@ -23,6 +23,10 @@ function money(value) {
 
 function periodName(period) {
   return ({ month: '月度账单', year: '年度账单' })[period] || '月度账单'
+}
+
+function shortPeriodName(period) {
+  return ({ month: '月度', year: '年度' })[period] || '月度'
 }
 
 function periodTabs() {
@@ -187,11 +191,12 @@ function renderApp() {
           </section>
 
           <section class="card view-section ${state.activeView === 'bills' ? 'active-view' : ''}" data-view="bills">
-            <div class="section-title">
-              <h3>${periodName(state.period)}</h3>
-              <input class="input" id="monthInput" type="month" value="${state.month}" style="max-width: 170px" />
+            <div class="section-title bill-title">
+              <div class="title-tabs">
+                ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
+              </div>
+              <input class="input date-compact" id="monthInput" type="month" value="${state.month}" />
             </div>
-            ${periodTabs()}
             <div class="list">
               ${state.bills.length ? state.bills.slice(0, 12).map((bill) => `
                 <div class="bill">
@@ -224,10 +229,10 @@ function renderApp() {
                 </div>
                 <button class="btn save-inline" type="submit">保存</button>
               </div>
-              <div class="grid-2">
+              <div class="compact-date-row">
                 <div class="field">
                   <label>日期</label>
-                  <input class="input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required />
+                  <input class="input date-compact" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required />
                 </div>
               </div>
               <div class="field">
@@ -253,9 +258,11 @@ function renderApp() {
                 <h3>${periodName(state.period)}</h3>
                 <p class="muted">${summary.label || state.month} · 豪豪替你把账算明白了</p>
               </div>
-              <input class="input" id="statsMonthInput" type="month" value="${state.month}" style="max-width: 170px" />
+              <input class="input date-compact" id="statsMonthInput" type="month" value="${state.month}" />
             </div>
-            ${periodTabs()}
+            <div class="period-tabs compact">
+              ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${shortPeriodName(period)}</button>`).join('')}
+            </div>
             <div class="stats-summary">
               <div class="stat-tile primary"><span>总支出</span><strong>¥${money(summary.expense)}</strong></div>
               <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(summary.income)}</strong></div>
