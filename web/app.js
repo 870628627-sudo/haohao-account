@@ -25,6 +25,18 @@ function periodName(period) {
   return ({ month: '月度账单', year: '年度账单' })[period] || '月度账单'
 }
 
+function selectedYear() {
+  return state.month.slice(0, 4)
+}
+
+function periodDateInput(id) {
+  if (state.period === 'year') {
+    return `<input class="input date-compact year-compact" id="${id}" type="number" min="2000" max="2100" step="1" value="${selectedYear()}" inputmode="numeric" />`
+  }
+
+  return `<input class="input date-compact" id="${id}" type="month" value="${state.month}" />`
+}
+
 function shortPeriodName(period) {
   return ({ month: '月度', year: '年度' })[period] || '月度'
 }
@@ -195,7 +207,7 @@ function renderApp() {
               <div class="title-tabs">
                 ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
               </div>
-              <input class="input date-compact" id="monthInput" type="month" value="${state.month}" />
+              ${periodDateInput('monthInput')}
             </div>
             <div class="list">
               ${state.bills.length ? state.bills.slice(0, 12).map((bill) => `
@@ -258,7 +270,7 @@ function renderApp() {
                 <h3>${periodName(state.period)}</h3>
                 <p class="muted">${summary.label || state.month} · 豪豪替你把账算明白了</p>
               </div>
-              <input class="input date-compact" id="statsMonthInput" type="month" value="${state.month}" />
+              ${periodDateInput('statsMonthInput')}
             </div>
             <div class="period-tabs compact">
               ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${shortPeriodName(period)}</button>`).join('')}
@@ -349,12 +361,12 @@ function bindAppEvents() {
   })
 
   document.querySelector('#monthInput').addEventListener('change', async (event) => {
-    state.month = event.target.value
+    state.month = state.period === 'year' ? `${event.target.value || selectedYear()}-01` : event.target.value
     await loadDashboard()
   })
 
   document.querySelector('#statsMonthInput').addEventListener('change', async (event) => {
-    state.month = event.target.value
+    state.month = state.period === 'year' ? `${event.target.value || selectedYear()}-01` : event.target.value
     await loadDashboard()
   })
 
