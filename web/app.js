@@ -1,5 +1,5 @@
 const bearSrc = '/assets/bear-ledger.jpg'
-const expenseCategories = ['早餐', '午餐', '晚餐', '零食饮料', '交通', '水电燃气', '房租', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '购物', '人情往来', '其他']
+const expenseCategories = ['早餐', '午餐', '晚餐', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '购物', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '话费网费', '日用品', '会员订阅', '其他']
 
@@ -217,11 +217,14 @@ function renderApp() {
                 <button class="segment ${state.billType === 'expense' ? 'active' : ''}" type="button" data-type="expense">支出</button>
                 <button class="segment ${state.billType === 'income' ? 'active' : ''}" type="button" data-type="income">收入</button>
               </div>
-              <div class="grid-2">
+              <div class="amount-save-row">
                 <div class="field">
                   <label>金额</label>
-                  <input class="input" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required />
+                  <input class="input amount-input" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required />
                 </div>
+                <button class="btn save-inline" type="submit">保存</button>
+              </div>
+              <div class="grid-2">
                 <div class="field">
                   <label>日期</label>
                   <input class="input" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required />
@@ -241,7 +244,6 @@ function renderApp() {
                 <label>备注</label>
                 <input class="input" name="note" placeholder="可不填，比如食堂、地铁、奶茶" />
               </div>
-              <button class="btn" type="submit">保存并接受豪豪审判</button>
             </form>
           </section>
 
@@ -301,7 +303,10 @@ function renderApp() {
               ${state.fixedItems.length ? state.fixedItems.map((item) => `
                 <div class="bill">
                   <div><strong>${item.name}</strong><small>${item.category}</small></div>
-                  <strong>¥${money(item.defaultAmount)}</strong>
+                  <div class="amount">
+                    <strong>¥${money(item.defaultAmount)}</strong>
+                    <br /><button class="btn secondary" data-record-fixed="${item.id}" style="min-height: 30px; padding: 0 10px; border-radius: 10px; margin-top: 6px;">记本月</button>
+                  </div>
                 </div>
               `).join('') : '<p class="muted">还没有固定支出项目。</p>'}
             </div>
@@ -414,6 +419,34 @@ function bindAppEvents() {
       await api(`/api/bills/${encodeURIComponent(button.dataset.delete)}`, { method: 'DELETE' })
       toast('账单已删除。')
       await loadDashboard()
+    })
+  })
+
+  document.querySelectorAll('[data-record-fixed]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const item = state.fixedItems.find((target) => target.id === button.dataset.recordFixed)
+      if (!item) return
+
+      const today = new Date().toISOString().slice(0, 10)
+      try {
+        const data = await api('/api/bills', {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'expense',
+            amount: item.defaultAmount,
+            category: item.category,
+            date: today,
+            note: item.name,
+            isFixed: true
+          })
+        })
+        judge(bearComment(data.bill))
+        state.month = data.bill.month
+        state.activeView = 'bills'
+        await loadDashboard()
+      } catch (error) {
+        toast(error.message)
+      }
     })
   })
 }

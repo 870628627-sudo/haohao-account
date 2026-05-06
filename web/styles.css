@@ -360,9 +360,13 @@ button {
   border: 1px solid var(--line);
   border-radius: 18px;
   background: #fff9f1;
+  width: 100%;
 }
 
 .period-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 38px;
   border: 0;
   border-radius: 13px;
@@ -608,6 +612,34 @@ button {
   color: #fff9f1;
 }
 
+.amount-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 12px;
+  align-items: end;
+}
+
+.amount-input {
+  height: 62px;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.save-inline {
+  min-height: 62px;
+  font-size: 18px;
+}
+
+.mobile-tabbar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
 @media (max-width: 860px) {
   body {
     background: #fffaf4;
@@ -713,7 +745,13 @@ button {
   .section-title {
     align-items: stretch;
     flex-direction: column;
+    gap: 10px;
     margin-bottom: 12px;
+  }
+
+  .section-title h3,
+  .section-title p {
+    width: 100%;
   }
 
   .section-title .input {
@@ -736,6 +774,21 @@ button {
   .btn {
     min-height: 42px;
     border-radius: 14px;
+  }
+
+  .amount-save-row {
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 10px;
+  }
+
+  .amount-input {
+    height: 58px;
+    font-size: 26px;
+  }
+
+  .save-inline {
+    min-height: 58px;
+    font-size: 17px;
   }
 
   .segmented {
@@ -779,6 +832,7 @@ button {
 
   .mobile-tabbar button {
     height: 50px;
+    padding: 0;
   }
 
   .mobile-tabbar span {
@@ -788,6 +842,17 @@ button {
   .category-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
+  }
+
+  .period-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .period-tabs button {
+    min-width: 0;
+    padding: 0;
+    text-align: center;
   }
 
   .stats-summary {
@@ -812,6 +877,10 @@ button {
 
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .amount-save-row {
+    grid-template-columns: minmax(0, 1fr) 84px;
   }
 }
 
