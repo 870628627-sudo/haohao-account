@@ -1,0 +1,39 @@
+﻿<view class="page">
+  <view class="section add-head">
+    <image class="add-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+    <view>
+      <view class="title">记一笔</view>
+      <view class="subtitle">豪豪已经拿好小本本了</view>
+    </view>
+  </view>
+
+  <view class="section card">
+    <view class="type-switch">
+      <view class="type {{form.type === 'expense' ? 'active' : ''}}" data-type="expense" bindtap="setType">支出</view>
+      <view class="type {{form.type === 'income' ? 'active' : ''}}" data-type="income" bindtap="setType">收入</view>
+    </view>
+
+    <input class="money-input" type="digit" placeholder="0.00" value="{{form.amount}}" bindinput="setAmount" />
+
+    <view class="subtitle">分类</view>
+    <view class="grid category-grid">
+      <view wx:for="{{categories}}" wx:key="name" class="chip {{form.category === item.name ? 'active' : ''}}" data-name="{{item.name}}" bindtap="setCategory">
+        {{item.name}}
+      </view>
+    </view>
+
+    <view class="form-row">
+      <view class="subtitle">日期</view>
+      <picker mode="date" value="{{form.date}}" bindchange="setDate">
+        <view class="input picker">{{form.date}}</view>
+      </picker>
+    </view>
+
+    <view class="form-row">
+      <view class="subtitle">备注</view>
+      <input class="input" placeholder="可不填，比如：食堂、地铁、奶茶" value="{{form.note}}" bindinput="setNote" />
+    </view>
+
+    <button class="button save" bindtap="submit">保存并接受豪豪审判</button>
+  </view>
+</view>

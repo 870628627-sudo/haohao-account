@@ -1,0 +1,58 @@
+﻿<view class="page">
+  <view class="section hero">
+    <image class="hero-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+    <view class="hero-copy">
+      <view class="subtitle">{{month}} 月概览</view>
+      <view class="title">今天钱包还好吗</view>
+    </view>
+    <view class="summary">
+      <view>
+        <view class="muted">本月结余</view>
+        <view class="amount">¥{{summary.balanceText}}</view>
+      </view>
+      <view class="budget-pill {{summary.usedRate >= 1 ? 'danger' : ''}}">
+        预算 {{summary.usedPercent}}%
+      </view>
+    </view>
+    <view class="comment row">
+      <image class="comment-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+      <view>{{bearComment}}</view>
+    </view>
+  </view>
+
+  <view class="quick-grid section">
+    <button class="button" bindtap="goAdd">记一笔</button>
+    <button class="button secondary" bindtap="goFixed">固定支出</button>
+  </view>
+
+  <view class="section stats-row">
+    <view class="card stat">
+      <view class="muted">收入</view>
+      <view class="stat-value income">¥{{summary.incomeText}}</view>
+    </view>
+    <view class="card stat">
+      <view class="muted">支出</view>
+      <view class="stat-value expense">¥{{summary.expenseText}}</view>
+    </view>
+  </view>
+
+  <view class="section card">
+    <view class="row between heading">
+      <view class="title small">最近账单</view>
+      <view class="link" bindtap="goBills">查看全部</view>
+    </view>
+    <view wx:if="{{recentBills.length === 0}}" class="empty-state">
+      <image class="empty-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+      <view class="muted">还没有记录，先让第一笔钱有个姓名。</view>
+    </view>
+    <view wx:for="{{recentBills}}" wx:key="id" class="bill row between">
+      <view>
+        <view class="bill-name">{{item.category}}</view>
+        <view class="muted">{{item.date}} {{item.note}}</view>
+      </view>
+      <view class="{{item.type === 'income' ? 'income' : 'expense'}}">
+        {{item.type === 'income' ? '+' : '-'}}¥{{item.amountText}}
+      </view>
+    </view>
+  </view>
+</view>

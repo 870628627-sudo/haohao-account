@@ -1,0 +1,32 @@
+.profile-head {
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
+  background: #fff0c8;
+}
+
+.profile-bear {
+  width: 126rpx;
+  height: 126rpx;
+  border-radius: 50%;
+  box-shadow: 0 8rpx 20rpx rgba(174, 104, 32, 0.16);
+}
+
+.menu-item {
+  min-height: 96rpx;
+  border-bottom: 2rpx solid #f5eadc;
+  font-weight: 800;
+}
+
+.menu-item:last-child {
+  border-bottom: 0;
+}
+
+.small {
+  font-size: 30rpx;
+}
+
+.status {
+  margin-top: 16rpx;
+  line-height: 1.6;
+}

@@ -1,0 +1,19 @@
+{
+  "name": "豪豪记账",
+  "short_name": "豪豪记账",
+  "description": "可爱小熊陪你记账，预算、账单、固定支出各自存储。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffaf4",
+  "theme_color": "#fffaf4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/assets/bear-ledger.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

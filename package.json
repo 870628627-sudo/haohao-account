@@ -1,0 +1,14 @@
+{
+  "name": "haohudget-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "豪豪记账网页应用",
+  "main": "server.cjs",
+  "scripts": {
+    "start": "node server.cjs",
+    "dev": "node server.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

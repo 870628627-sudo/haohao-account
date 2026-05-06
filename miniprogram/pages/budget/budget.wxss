@@ -1,0 +1,26 @@
+.tool-head {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 6rpx 2rpx 10rpx;
+}
+
+.tool-bear {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  box-shadow: 0 8rpx 20rpx rgba(174, 104, 32, 0.14);
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  margin-top: 28rpx;
+}
+
+.budget-input {
+  margin: 20rpx 0 28rpx;
+  font-size: 38rpx;
+  font-weight: 800;
+  color: #5b351c;
+}

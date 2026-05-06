@@ -1,0 +1,36 @@
+﻿<view class="page">
+  <view class="section tool-head">
+    <image class="tool-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+    <view>
+      <view class="title">固定支出</view>
+      <view class="subtitle">房租水电别月底装失踪</view>
+    </view>
+  </view>
+
+  <view class="section card">
+    <input class="input" placeholder="项目名，例如：电费" value="{{form.name}}" bindinput="setName" />
+    <input class="input input-gap" type="digit" placeholder="默认金额，例如：80" value="{{form.defaultAmount}}" bindinput="setAmount" />
+    <picker mode="selector" range="{{categories}}" value="{{categoryIndex}}" bindchange="setCategory">
+      <view class="input picker">{{form.category}}</view>
+    </picker>
+    <input class="input input-gap" placeholder="备注，可不填" value="{{form.note}}" bindinput="setNote" />
+    <button class="button save" bindtap="saveItem">保存项目</button>
+  </view>
+
+  <view class="section card">
+    <view class="title small">本月填写</view>
+    <view wx:if="{{items.length === 0}}" class="empty-state">
+      <image class="empty-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+      <view class="muted">还没有固定支出项目，先加一个。</view>
+    </view>
+    <view wx:for="{{items}}" wx:key="id" class="item">
+      <view class="row between">
+        <view>
+          <view class="item-name">{{item.name}}</view>
+          <view class="muted">{{item.category}} · 默认 ¥{{item.amountText}}</view>
+        </view>
+        <button class="mini-btn" data-id="{{item.id}}" bindtap="recordThisMonth">记本月</button>
+      </view>
+    </view>
+  </view>
+</view>

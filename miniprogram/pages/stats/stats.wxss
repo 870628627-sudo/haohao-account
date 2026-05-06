@@ -1,0 +1,79 @@
+.stats-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff0c8;
+}
+
+.stats-bear {
+  width: 150rpx;
+  height: 150rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 8rpx 22rpx rgba(174, 104, 32, 0.12);
+}
+
+.big {
+  margin-top: 22rpx;
+  font-size: 62rpx;
+  color: #a44b35;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.stat {
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.income {
+  color: #327451;
+}
+
+.expense {
+  color: #a44b35;
+}
+
+.small {
+  font-size: 30rpx;
+}
+
+.bar {
+  margin: 22rpx 0;
+  height: 18rpx;
+  border-radius: 999rpx;
+  background: #f5eadc;
+  overflow: hidden;
+}
+
+.bar-inner {
+  height: 100%;
+  background: #327451;
+}
+
+.bar-inner.danger {
+  background: #d5523e;
+}
+
+.rank {
+  padding: 22rpx 0;
+  border-top: 2rpx solid #f5eadc;
+}
+
+.empty-state {
+  padding: 36rpx 0;
+  text-align: center;
+}
+
+.empty-bear {
+  width: 132rpx;
+  height: 132rpx;
+  border-radius: 50%;
+  margin-bottom: 14rpx;
+}

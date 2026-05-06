@@ -1,0 +1,29 @@
+﻿<view class="page">
+  <view class="section card profile-head">
+    <image class="profile-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+    <view>
+      <view class="title">豪豪记账</view>
+      <view class="subtitle">个人账本 · 犀利但贴心</view>
+    </view>
+  </view>
+
+  <view class="section card menu">
+    <view class="menu-item row between" bindtap="goBudget">
+      <view>月度总预算</view>
+      <view class="muted">设置</view>
+    </view>
+    <view class="menu-item row between" bindtap="goFixed">
+      <view>固定支出项目</view>
+      <view class="muted">管理</view>
+    </view>
+    <view class="menu-item row between" bindtap="goBills">
+      <view>数据导出</view>
+      <view class="muted">去账单页</view>
+    </view>
+  </view>
+
+  <view class="section card">
+    <view class="title small">云开发状态</view>
+    <view class="muted status">{{cloudReady ? '已初始化云开发。记得替换 env id 并创建集合。' : '当前使用本地缓存兜底。开通云开发后可同步到云数据库。'}}</view>
+  </view>
+</view>

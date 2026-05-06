@@ -1,0 +1,48 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/add/add",
+    "pages/bills/bills",
+    "pages/stats/stats",
+    "pages/profile/profile",
+    "pages/fixed/fixed",
+    "pages/budget/budget"
+  ],
+  "window": {
+    "navigationBarTitleText": "豪豪记账",
+    "navigationBarBackgroundColor": "#fff8ed",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fff8ed",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#9a7b58",
+    "selectedColor": "#5b351c",
+    "backgroundColor": "#fffaf4",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/add/add",
+        "text": "记一笔"
+      },
+      {
+        "pagePath": "pages/bills/bills",
+        "text": "账单"
+      },
+      {
+        "pagePath": "pages/stats/stats",
+        "text": "统计"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

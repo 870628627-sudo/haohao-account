@@ -1,0 +1,45 @@
+﻿<view class="page">
+  <view class="section card stats-hero">
+    <view>
+      <view class="subtitle">{{month}} 月</view>
+      <view class="title">钱都去哪了</view>
+      <view class="big">¥{{summary.expenseText}}</view>
+      <view class="muted">本月支出</view>
+    </view>
+    <image class="stats-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+  </view>
+
+  <view class="section stats-row">
+    <view class="card stat">
+      <view class="muted">收入</view>
+      <view class="income">¥{{summary.incomeText}}</view>
+    </view>
+    <view class="card stat">
+      <view class="muted">结余</view>
+      <view class="{{summary.balance >= 0 ? 'income' : 'expense'}}">¥{{summary.balanceText}}</view>
+    </view>
+  </view>
+
+  <view class="section card">
+    <view class="row between">
+      <view class="title small">预算进度</view>
+      <view class="muted">{{summary.usedPercent}}%</view>
+    </view>
+    <view class="bar">
+      <view class="bar-inner {{summary.usedRate >= 1 ? 'danger' : ''}}" style="width: {{summary.barPercent}}%;"></view>
+    </view>
+    <view class="muted">预算 ¥{{summary.budgetText}}，剩余 ¥{{summary.budgetLeftText}}</view>
+  </view>
+
+  <view class="section card">
+    <view class="title small">支出排行</view>
+    <view wx:if="{{ranking.length === 0}}" class="empty-state">
+      <image class="empty-bear" src="/assets/bear-ledger.jpg" mode="aspectFill"></image>
+      <view class="muted">还没有支出排行，豪豪暂时无瓜可吃。</view>
+    </view>
+    <view wx:for="{{ranking}}" wx:key="category" class="rank row between">
+      <view>{{index + 1}}. {{item.category}}</view>
+      <view class="expense">¥{{item.amountText}}</view>
+    </view>
+  </view>
+</view>
