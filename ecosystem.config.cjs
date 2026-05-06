@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'haohudget',
+      name: 'haohao-account',
       script: 'server.cjs',
       cwd: __dirname,
       env: {
