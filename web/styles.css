@@ -511,13 +511,15 @@ button {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  text-align: center;
+  text-align-last: center;
   appearance: none;
   -webkit-appearance: none;
 }
 
 .travel-date-input::-webkit-date-and-time-value {
   min-width: 0;
-  text-align: left;
+  text-align: center;
 }
 
 .travel-date-input::-webkit-calendar-picker-indicator {
