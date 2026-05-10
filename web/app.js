@@ -1,8 +1,8 @@
 const bearSrc = '/assets/bear-ledger.jpg'
 const canvasFontFamily = '"PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "SimHei", sans-serif'
-const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '小荷包', '人情往来', '其他']
+const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '零食', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
-const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '其他']
+const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
 
 const state = {
   user: null,
@@ -210,10 +210,15 @@ function bearComment(record) {
     return pickComment(record, ['这顿饭是镶金边了吗？豪豪替钱包沉默三秒。', '餐饮单笔破百，豪豪建议把它列入重点观察。', '这顿饭很有排面，但预算可能没这么爱面子。'])
   }
 
-  if (['水果', '零食饮料'].includes(category)) {
+  if (['水果', '奶茶', '零食', '零食饮料'].includes(category)) {
+    if (category === '奶茶') {
+      if (amount <= 20) return pickComment(record, ['奶茶支出还算克制，豪豪允许一点甜。', '这杯奶茶没有太过分，钱包暂时不抗议。', '快乐加冰可以，预算别加太满。'])
+      if (amount <= 50) return pickComment(record, ['奶茶有点活跃，豪豪建议明天喝水冷静一下。', '这杯快乐不便宜，钱包已经记住甜度了。', '奶茶到账，预算表轻轻皱眉。'])
+      return pickComment(record, ['奶茶喝到这个数，豪豪建议它先退出本周群聊。', '这不是奶茶，是钱包的甜蜜负担。', '豪豪不反对快乐，但反对奶茶连续开会。'])
+    }
     if (amount <= 20) return pickComment(record, ['小零食可以，豪豪允许快乐有一点预算。', '这笔嘴馋支出还算克制，钱包没报警。', '甜的可以有，但豪豪已经开始数次数了。'])
-    if (amount <= 50) return pickComment(record, ['零食饮料有点活跃，豪豪建议它明天低调。', '这笔快乐不算便宜，钱包正在小声记仇。', '嘴巴开心了，预算表开始皱眉。'])
-    return pickComment(record, ['零食饮料花到这个数，豪豪建议快乐先冷静两天。', '这不是嘴馋，这是预算的支线剧情。', '喝的吃的很开心，钱包看起来不太开心。'])
+    if (amount <= 50) return pickComment(record, ['零食有点活跃，豪豪建议它明天低调。', '这笔快乐不算便宜，钱包正在小声记仇。', '嘴巴开心了，预算表开始皱眉。'])
+    return pickComment(record, ['零食花到这个数，豪豪建议快乐先冷静两天。', '这不是嘴馋，这是预算的支线剧情。', '吃得很开心，钱包看起来不太开心。'])
   }
 
   if (category === '交通') {
@@ -237,11 +242,6 @@ function bearComment(record) {
   if (category === '理发') {
     if (amount <= 60) return pickComment(record, ['发型支出很稳，豪豪批准你精神一点。', '理发记上了，钱包和发际线都需要被认真对待。', '这笔形象管理还算克制，豪豪点头。'])
     return pickComment(record, ['这次理发有点高级，豪豪希望发型撑得起价格。', '形象管理可以，但钱包刚刚也被修剪了一下。', '理发支出偏高，豪豪建议帅气多维持几天。'])
-  }
-
-  if (category === '小荷包') {
-    if (amount <= 100) return pickComment(record, ['小荷包支出已记录，豪豪建议别让它偷偷变大。', '这笔小荷包还算温和，钱包暂时不发言。', '小荷包动了一下，豪豪已经看见。'])
-    return pickComment(record, ['小荷包这笔不小，豪豪建议查查是不是在偷偷膨胀。', '这笔小荷包很有存在感，预算表已经抬头。', '豪豪提醒：小荷包也要接受账本监督。'])
   }
 
   if (category === '旅游') {
@@ -468,9 +468,9 @@ function renderApp() {
           <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
             <div class="section-title"><h3>固定支出</h3></div>
             <form class="form" id="fixedForm">
-              <input class="input" name="name" placeholder="项目名，例如电费" />
+              <input class="input" name="name" placeholder="项目名，例如电费" required />
               <div class="grid-2">
-                <input class="input" name="defaultAmount" type="number" min="0" step="0.01" placeholder="金额" />
+                <input class="input" name="defaultAmount" type="number" min="0.01" step="0.01" placeholder="金额" required />
                 <select class="select" name="category">${fixedCategories.map((item) => `<option>${item}</option>`).join('')}</select>
               </div>
               <button class="btn secondary" type="submit">保存项目</button>
@@ -904,8 +904,14 @@ function bindAppEvents() {
   document.querySelector('#fixedForm').addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
+    const payload = Object.fromEntries(form.entries())
+    if (!String(payload.name || '').trim() || Number(payload.defaultAmount) <= 0) {
+      toast('请填写固定项目名称和金额。')
+      return
+    }
     try {
-      await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(Object.fromEntries(form.entries())) })
+      await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
+      event.currentTarget.reset()
       toast('固定支出项目已保存。')
       await loadDashboard()
     } catch (error) {
