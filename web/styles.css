@@ -162,6 +162,8 @@ button {
   min-height: 340px;
   overflow: hidden;
   background: #fff0c8;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .hero-copy {
