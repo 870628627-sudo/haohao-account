@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v50'
-const APP_VERSION = '20260511-travel-ledger'
+const CACHE_NAME = 'haohudget-v51'
+const APP_VERSION = '20260511-travel-ledger-ui'
 const ASSETS = [
   '/',
   '/index.html',

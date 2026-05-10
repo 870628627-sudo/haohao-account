@@ -1019,6 +1019,51 @@ button {
   gap: 14px;
 }
 
+.mobile-tabbar.travel-tabbar-hidden {
+  display: none;
+}
+
+.travel-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 36;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(53, 36, 23, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.travel-modal-card {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 254, 253, 0.97);
+  box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
+}
+
+.travel-modal-card.compact {
+  width: min(420px, 100%);
+}
+
+.travel-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.travel-modal-head h3 {
+  margin: 0;
+  color: var(--brand);
+  font-size: 20px;
+}
+
 .travel-hero,
 .travel-detail-hero,
 .travel-panel,
@@ -1031,10 +1076,10 @@ button {
 
 .travel-hero {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 24px;
+  padding: 16px 18px;
   background:
     linear-gradient(135deg, rgba(255, 240, 200, 0.96), rgba(255, 249, 241, 0.92));
 }
@@ -1046,6 +1091,11 @@ button {
   font-size: clamp(28px, 5vw, 48px);
   line-height: 1.05;
   letter-spacing: 0;
+}
+
+.travel-detail-title h2 {
+  margin: 5px 0;
+  font-size: clamp(24px, 4vw, 36px);
 }
 
 .travel-hero p,
@@ -1178,8 +1228,8 @@ button {
 
 .travel-detail-hero {
   display: grid;
-  gap: 14px;
-  padding: 20px;
+  gap: 10px;
+  padding: 14px;
   background:
     linear-gradient(135deg, rgba(255, 240, 200, 0.96), rgba(255, 250, 244, 0.92));
 }
@@ -1199,25 +1249,35 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.travel-detail-budget div {
+.travel-detail-budget div,
+.travel-budget-button {
   min-width: 0;
-  padding: 12px;
+  padding: 10px;
+  border: 0;
   border-radius: 16px;
   background: rgba(255, 254, 253, 0.76);
+  color: var(--ink);
+  text-align: left;
 }
 
-.travel-detail-budget span {
+.travel-budget-button {
+  box-shadow: inset 0 0 0 1px rgba(245, 185, 76, 0.22);
+}
+
+.travel-detail-budget span,
+.travel-budget-button span {
   display: block;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
 }
 
-.travel-detail-budget strong {
+.travel-detail-budget strong,
+.travel-budget-button strong {
   display: block;
   margin-top: 5px;
   overflow: hidden;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1972,6 +2032,10 @@ button {
   .travel-hero h2,
   .travel-detail-title h2 {
     font-size: 30px;
+  }
+
+  .travel-detail-title h2 {
+    font-size: 25px;
   }
 
   .travel-overview-strip {

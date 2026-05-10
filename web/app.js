@@ -428,13 +428,10 @@ function renderAdminUserDetail(detail) {
 
 function renderTripForm() {
   return `
-    <section class="card travel-form-card">
-      <div class="section-title">
-        <div>
-          <h3>新建旅行卡片</h3>
-          <p class="muted">地点、预算和日期先放好，账就能按这趟旅行单独记。</p>
-        </div>
-        ${state.trips.length ? '<button class="btn secondary" id="tripFormCloseBtn" type="button">收起</button>' : ''}
+    <div class="travel-modal-card">
+      <div class="travel-modal-head">
+        <h3>新建旅行</h3>
+        <button class="btn secondary" id="tripFormCloseBtn" type="button">关闭</button>
       </div>
       <form class="form" id="tripForm">
         <div class="form-grid two">
@@ -467,7 +464,37 @@ function renderTripForm() {
         </div>
         <button class="btn" type="submit">创建旅行</button>
       </form>
-    </section>
+    </div>
+  `
+}
+
+function renderTripBudgetForm() {
+  const trip = state.travelDetail?.trip
+  if (!trip) return ''
+  return `
+    <div class="travel-modal-card compact">
+      <div class="travel-modal-head">
+        <h3>设置预算</h3>
+        <button class="btn secondary" id="tripBudgetCloseBtn" type="button">关闭</button>
+      </div>
+      <form class="form" id="tripBudgetForm">
+        <div class="field">
+          <label>${escapeAttr(trip.title)} 的旅行预算</label>
+          <input class="input amount-input" name="budget" type="number" min="0" step="0.01" placeholder="0.00" value="${Number(trip.budget || 0) ? escapeAttr(trip.budget) : ''}" />
+        </div>
+        <button class="btn" type="submit">保存预算</button>
+      </form>
+    </div>
+  `
+}
+
+function renderTravelSheet() {
+  if (!isTravelBook() || !state.travelPanel) return ''
+  const body = state.travelPanel === 'budget' ? renderTripBudgetForm() : renderTripForm()
+  return `
+    <div class="travel-sheet" role="dialog" aria-modal="true" aria-label="旅行设置">
+      ${body}
+    </div>
   `
 }
 
@@ -479,8 +506,6 @@ function renderTravelHome() {
       <section class="travel-hero">
         <div>
           <div class="eyebrow">旅行账本</div>
-          <h2>每一趟，都单独算清楚</h2>
-          <p>按地点创建旅行卡片，记预算、花费和小回忆。日常账本负责生活，旅行账本负责远方。</p>
         </div>
         <button class="btn travel-new-btn" id="tripNewBtn" type="button">新建旅行</button>
       </section>
@@ -490,8 +515,6 @@ function renderTravelHome() {
         <div><span>进行中</span><strong>${activeCount}</strong></div>
         <div><span>总支出</span><strong>¥${money(totalExpense)}</strong></div>
       </div>
-
-      ${state.travelPanel === 'newTrip' || !state.trips.length ? renderTripForm() : ''}
 
       <section class="travel-card-grid">
         ${state.trips.length ? state.trips.map((trip) => `
@@ -538,21 +561,12 @@ function renderTripDetail() {
         </div>
         <div class="travel-detail-budget">
           <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
-          <div><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></div>
+          <button class="travel-budget-button" data-trip-budget type="button"><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></button>
           <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
         </div>
         <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
         <p class="travel-tip">${travelTip(trip)}</p>
       </section>
-
-      <div class="travel-tabs">
-        ${[
-          ['overview', '总览'],
-          ['add', '记一笔'],
-          ['bills', '账单'],
-          ['stats', '统计']
-        ].map(([tab, label]) => `<button class="${state.activeTripTab === tab ? 'active' : ''}" data-trip-tab="${tab}" type="button">${label}</button>`).join('')}
-      </div>
 
       ${state.activeTripTab === 'overview' ? `
         <section class="travel-panel">
@@ -1054,10 +1068,10 @@ function renderApp() {
         `}
       </div>
 
-      <nav class="mobile-tabbar">
+      <nav class="mobile-tabbar ${isTravelBook() && !state.activeTripId ? 'travel-tabbar-hidden' : ''}">
         ${isTravelBook() ? `
-          <button class="${!state.activeTripId ? 'active' : ''}" data-travel-home type="button"><span>⌂</span>旅行</button>
-          <button data-travel-new type="button"><span>＋</span>新建</button>
+          <button data-travel-home type="button"><span>⌂</span>首页</button>
+          <button class="${state.activeTripTab === 'overview' ? 'active' : ''}" data-travel-tab="overview" type="button"><span>◇</span>总览</button>
           <button class="${state.activeTripTab === 'add' ? 'active' : ''}" data-travel-tab="add" type="button"><span>✎</span>记账</button>
           <button class="${state.activeTripTab === 'bills' ? 'active' : ''}" data-travel-tab="bills" type="button"><span>≡</span>账单</button>
           <button class="${state.activeTripTab === 'stats' ? 'active' : ''}" data-travel-tab="stats" type="button"><span>◔</span>统计</button>
@@ -1069,6 +1083,8 @@ function renderApp() {
           <button class="${state.activeView === 'profile' ? 'active' : ''}" data-view-tab="profile"><span>◇</span>固定</button>
         `}
       </nav>
+
+      ${renderTravelSheet()}
 
       ${state.accountMenuOpen ? `
         <div class="account-menu-sheet" role="dialog" aria-modal="true" aria-label="账户菜单">
@@ -1552,6 +1568,18 @@ function bindAppEvents() {
     renderApp()
   })
 
+  document.querySelector('#tripBudgetCloseBtn')?.addEventListener('click', () => {
+    state.travelPanel = ''
+    renderApp()
+  })
+
+  document.querySelector('.travel-sheet')?.addEventListener('click', (event) => {
+    if (event.target.classList.contains('travel-sheet')) {
+      state.travelPanel = ''
+      renderApp()
+    }
+  })
+
   document.querySelector('#tripForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -1586,6 +1614,28 @@ function bindAppEvents() {
     state.travelDetail = null
     localStorage.removeItem('haohao-active-trip')
     renderApp()
+  })
+
+  document.querySelector('[data-trip-budget]')?.addEventListener('click', () => {
+    state.travelPanel = 'budget'
+    renderApp()
+  })
+
+  document.querySelector('#tripBudgetForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!state.activeTripId) return
+    const form = new FormData(event.currentTarget)
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ budget: form.get('budget') })
+      })
+      state.travelPanel = ''
+      await loadDashboard()
+      toast('旅行预算已更新。')
+    } catch (error) {
+      toast(error.message)
+    }
   })
 
   document.querySelectorAll('[data-trip-tab]').forEach((button) => {

@@ -762,6 +762,32 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'PUT' && /^\/api\/trips\/[^/]+$/.test(url.pathname)) {
+    const tripId = decodeURIComponent(url.pathname.split('/').pop())
+    const existing = db.prepare('SELECT id FROM trip_books WHERE id = ? AND user_id = ?').get(tripId, user.id)
+    if (!existing) {
+      json(res, 404, { error: '旅行账本不存在' })
+      return
+    }
+    const body = await readBody(req)
+    const budget = toMoneyNumber(body.budget)
+    db.prepare('UPDATE trip_books SET budget = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(budget, nowIso(), tripId, user.id)
+    const saved = db.prepare(`
+      SELECT
+        trip_books.*,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'expense' THEN trip_bills.amount ELSE 0 END), 0) AS expense,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'income' THEN trip_bills.amount ELSE 0 END), 0) AS income,
+        COUNT(trip_bills.id) AS bill_count
+      FROM trip_books
+      LEFT JOIN trip_bills ON trip_bills.trip_id = trip_books.id AND trip_bills.user_id = trip_books.user_id
+      WHERE trip_books.id = ? AND trip_books.user_id = ?
+      GROUP BY trip_books.id
+    `).get(tripId, user.id)
+    json(res, 200, { trip: mapTrip(saved) })
+    return
+  }
+
   if (req.method === 'GET' && /^\/api\/trips\/[^/]+$/.test(url.pathname)) {
     const tripId = decodeURIComponent(url.pathname.split('/').pop())
     const trip = db.prepare(`
