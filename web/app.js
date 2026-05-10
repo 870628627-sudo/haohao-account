@@ -116,12 +116,6 @@ function renderProfileSection(summary) {
   const isFixed = state.profileTool === 'fixed'
   return `
     <section class="card view-section profile-panel ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
-      <div class="section-title">
-        <div>
-          <h3>固定设置</h3>
-          <p class="muted">预算和固定支出都从这里点开管理。</p>
-        </div>
-      </div>
       <div class="profile-tool-tabs">
         <button class="${isBudget ? 'active' : ''}" data-profile-tool="budget" type="button">
           <strong>月度预算</strong>
@@ -158,10 +152,6 @@ function renderProfileSection(summary) {
         </div>
       ` : ''}
       ${!isBudget && !isFixed ? `
-        <div class="profile-hint">
-          <strong>点上面的标签开始设置</strong>
-          <span>预算和固定支出不再直接展开，页面会更清爽一点。</span>
-        </div>
         ${renderFixedItemList()}
       ` : ''}
     </section>
@@ -414,10 +404,6 @@ function renderApp() {
           <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
             <img src="${escapeAttr(avatarSrc())}" alt="账户头像" />
           </button>
-          <div>
-            <h1>豪豪记账<span class="brand-nickname">${escapeAttr(state.user.nickname)}</span></h1>
-            <p>个人账本 · ${state.month}</p>
-          </div>
         </div>
         <div class="userbar">
           <span>${state.user.nickname} · ${state.user.email}</span>
@@ -582,11 +568,13 @@ function renderApp() {
                 <img src="${escapeAttr(avatarSrc())}" alt="当前头像" />
                 <div>
                   <strong>头像</strong>
-                  <span>上传一张喜欢的图片，左上角小熊会换成它。</span>
-                  <label class="btn secondary avatar-upload">
-                    更换头像
-                    <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                  </label>
+                  <div class="avatar-actions">
+                    <label class="avatar-action">
+                      更换图片
+                      <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                    </label>
+                    <button class="avatar-action" id="avatarResetBtn" type="button">系统小熊</button>
+                  </div>
                 </div>
               </div>
               <div class="account-details">
@@ -798,6 +786,20 @@ function bindAppEvents() {
       state.user = data.user
       renderApp()
       toast('头像已更新。')
+    } catch (error) {
+      toast(error.message || '头像更新失败。')
+    }
+  })
+
+  document.querySelector('#avatarResetBtn')?.addEventListener('click', async () => {
+    try {
+      const data = await api('/api/profile', {
+        method: 'POST',
+        body: JSON.stringify({ nickname: state.user.nickname, avatarData: '' })
+      })
+      state.user = data.user
+      renderApp()
+      toast('已换回系统小熊。')
     } catch (error) {
       toast(error.message || '头像更新失败。')
     }

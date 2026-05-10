@@ -577,9 +577,9 @@ button {
 
 .profile-tool-tabs {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 10px;
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .profile-tool-tabs button {
@@ -605,7 +605,6 @@ button {
 }
 
 .profile-tool-tabs span,
-.profile-hint span,
 .avatar-editor span {
   color: var(--muted);
   font-size: 13px;
@@ -621,16 +620,6 @@ button {
 
 .compact-title {
   margin-bottom: 12px;
-}
-
-.profile-hint {
-  display: grid;
-  gap: 4px;
-  margin-top: 14px;
-  padding: 14px;
-  border: 1px dashed var(--line);
-  border-radius: 18px;
-  background: rgba(255, 249, 241, 0.72);
 }
 
 .fixed-list {
@@ -659,14 +648,29 @@ button {
 
 .avatar-editor div {
   display: grid;
-  gap: 7px;
+  gap: 10px;
 }
 
-.avatar-upload {
-  width: fit-content;
+.avatar-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
-.avatar-upload input {
+.avatar-action {
+  display: inline-grid;
+  place-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--brand);
+  font-weight: 800;
+  text-align: center;
+}
+
+.avatar-action input {
   display: none;
 }
 
