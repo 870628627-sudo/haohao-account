@@ -1313,7 +1313,7 @@ button {
   }
 
   .hero {
-    min-height: calc(100dvh - 128px);
+    min-height: auto;
     flex-direction: column;
   }
 
@@ -1323,8 +1323,8 @@ button {
 
   .hero-bear {
     position: static;
-    width: min(62vw, 230px);
-    margin: 10px auto 0;
+    width: min(56vw, 210px);
+    margin: 6px auto 8px;
     display: block;
     opacity: 1;
   }
@@ -1356,7 +1356,7 @@ button {
   .hero-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: auto;
+    margin-top: 0;
   }
 
   .mini-card {
