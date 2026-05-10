@@ -444,7 +444,7 @@ function renderTripForm() {
             <input class="input" name="place" maxlength="28" placeholder="比如 杭州" required />
           </div>
         </div>
-        <div class="form-grid three">
+        <div class="form-grid two travel-date-grid">
           <div class="field">
             <label>开始日期</label>
             <input class="input" name="startDate" type="date" value="${beijingDateString()}" required />
@@ -453,10 +453,10 @@ function renderTripForm() {
             <label>结束日期</label>
             <input class="input" name="endDate" type="date" value="${beijingDateString()}" required />
           </div>
-          <div class="field">
-            <label>预算</label>
-            <input class="input" name="budget" type="number" min="0" step="0.01" placeholder="0.00" />
-          </div>
+        </div>
+        <div class="field">
+          <label>预算</label>
+          <input class="input" name="budget" type="number" min="0" step="0.01" placeholder="0.00" />
         </div>
         <div class="field">
           <label>备注</label>
@@ -553,11 +553,12 @@ function renderTripDetail() {
   return `
     <div class="travel-workspace trip-detail">
       <section class="travel-detail-hero budget-${budgetTone(trip)}">
-        <button class="btn secondary" id="tripBackBtn" type="button">返回旅行</button>
         <div class="travel-detail-title">
-          <span>${escapeAttr(trip.place)}</span>
-          <h2>${escapeAttr(trip.title)}</h2>
-          <p>${dateRangeText(trip.startDate, trip.endDate)} · ${tripStatusText(trip.status)}</p>
+          <span>旅行</span>
+          <div class="travel-title-row">
+            <h2>${escapeAttr(trip.title)}</h2>
+            <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
+          </div>
         </div>
         <div class="travel-detail-budget">
           <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
@@ -565,7 +566,6 @@ function renderTripDetail() {
           <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
         </div>
         <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
-        <p class="travel-tip">${travelTip(trip)}</p>
       </section>
 
       ${state.activeTripTab === 'overview' ? `
