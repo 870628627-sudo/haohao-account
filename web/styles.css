@@ -950,10 +950,10 @@ button {
   width: min(460px, 100%);
   max-height: calc(100dvh - 36px);
   overflow: auto;
-  padding: 20px;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: 24px;
-  background: var(--paper);
+  background: rgba(255, 254, 253, 0.96);
   box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
 }
 
@@ -967,10 +967,9 @@ button {
   gap: 14px;
   align-items: center;
   margin-bottom: 12px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: linear-gradient(135deg, #fff0c8 0%, #fff9f1 100%);
+  padding: 4px 2px 12px;
+  border-bottom: 1px solid rgba(241, 226, 204, 0.8);
+  background: transparent;
 }
 
 .account-profile-avatar {
@@ -1005,22 +1004,24 @@ button {
 }
 
 .account-avatar-actions {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .account-details {
   display: grid;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 0;
+  margin-bottom: 14px;
+  border-top: 1px solid rgba(241, 226, 204, 0.74);
 }
 
 .account-details div {
   display: grid;
-  gap: 5px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: #fff9f1;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 12px 2px;
+  border-bottom: 1px solid rgba(241, 226, 204, 0.74);
+  background: transparent;
 }
 
 .account-details span {
@@ -1035,8 +1036,8 @@ button {
 }
 
 .account-form {
-  padding-top: 16px;
-  border-top: 1px solid #f5eadc;
+  padding-top: 2px;
+  border-top: 0;
 }
 
 .account-form-label {

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v44'
-const APP_VERSION = '20260511-share-full-pie'
+const CACHE_NAME = 'haohudget-v45'
+const APP_VERSION = '20260511-more-judges-profile'
 const ASSETS = [
   '/',
   '/index.html',
