@@ -447,6 +447,65 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'GET' && url.pathname.startsWith('/api/admin/users/') && url.pathname.endsWith('/detail')) {
+    if (!requireAdmin(req, res)) return
+    const parts = url.pathname.split('/').filter(Boolean)
+    const userId = decodeURIComponent(parts[3] || '')
+    const targetUser = db.prepare('SELECT * FROM users WHERE id = ?').get(userId)
+    if (!targetUser) {
+      json(res, 404, { error: '用户不存在' })
+      return
+    }
+
+    const month = normalizeMonth(url.searchParams.get('month') || '')
+    const period = normalizePeriod(url.searchParams.get('period') || '')
+    const range = periodRange(period, month)
+    const income = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'income'")
+      .get(userId, range.start, range.end).total
+    const expense = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'")
+      .get(userId, range.start, range.end).total
+    const ranking = db.prepare(`
+      SELECT category, SUM(amount) AS amount
+      FROM bills
+      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
+      GROUP BY category
+      ORDER BY amount DESC
+    `).all(userId, range.start, range.end)
+    const highestExpense = db.prepare(`
+      SELECT category, amount, date, note
+      FROM bills
+      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
+      ORDER BY amount DESC
+      LIMIT 1
+    `).get(userId, range.start, range.end) || null
+    const billCount = db.prepare('SELECT COUNT(*) AS count FROM bills WHERE user_id = ? AND date >= ? AND date < ?')
+      .get(userId, range.start, range.end).count
+    const bills = db.prepare(`
+      SELECT *
+      FROM bills
+      WHERE user_id = ? AND date >= ? AND date < ?
+      ORDER BY date DESC, created_at DESC
+      LIMIT 120
+    `).all(userId, range.start, range.end).map(mapBill)
+
+    json(res, 200, {
+      user: cleanUser(targetUser),
+      summary: {
+        month,
+        period,
+        label: range.label,
+        income,
+        expense,
+        balance: income - expense,
+        ranking,
+        highestExpense,
+        billCount
+      },
+      bills
+    })
+    return
+  }
+
   const user = requireUser(req, res)
   if (!user) {
     return

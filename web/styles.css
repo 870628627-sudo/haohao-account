@@ -1030,10 +1030,17 @@ button {
 
 .admin-user {
   display: flex;
+  width: 100%;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
   border-top: 1px solid #f5eadc;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
 }
 
 .admin-user:first-child {
@@ -1049,6 +1056,82 @@ button {
 .admin-user > div:last-child {
   flex: 0 0 auto;
   text-align: right;
+}
+
+.admin-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-back {
+  justify-self: start;
+}
+
+.admin-detail-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff9f1;
+}
+
+.admin-detail-head h3 {
+  margin: 0;
+}
+
+.admin-detail-head > strong {
+  flex: 0 0 auto;
+  color: var(--brand);
+  font-size: 14px;
+}
+
+.admin-detail-stats {
+  gap: 8px;
+}
+
+.admin-detail-section {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-detail-section h4 {
+  margin: 0;
+  color: var(--brand);
+}
+
+.admin-bill-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-bill {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #f5eadc;
+}
+
+.admin-bill:first-child {
+  border-top: 0;
+}
+
+.admin-bill strong,
+.admin-bill small {
+  display: block;
+}
+
+.admin-bill small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-bill > span {
+  flex: 0 0 auto;
+  font-weight: 900;
 }
 
 .share-preview {

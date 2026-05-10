@@ -20,6 +20,7 @@ const state = {
   adminLoginOpen: false,
   adminPanelOpen: false,
   adminSummary: null,
+  adminUserDetail: null,
   sharePanelOpen: false,
   shareImageUrl: '',
   heroMessageIndex: Math.floor(Math.random() * 12),
@@ -215,6 +216,58 @@ function renderProfileSection(summary) {
         ${renderFixedItemList()}
       ` : ''}
     </section>
+  `
+}
+
+function renderAdminUserDetail(detail) {
+  const user = detail.user
+  const summary = detail.summary || { income: 0, expense: 0, balance: 0, billCount: 0, ranking: [], highestExpense: null }
+  const maxRank = Math.max(...(summary.ranking || []).map((item) => item.amount), 1)
+  return `
+    <div class="admin-detail">
+      <button class="btn secondary admin-back" id="adminBackBtn" type="button">返回用户列表</button>
+      <div class="admin-detail-head">
+        <div>
+          <h3>${escapeAttr(user.nickname)}</h3>
+          <p class="muted">${escapeAttr(user.email)} · ${formatDateTime(user.createdAt)}</p>
+        </div>
+        <strong>${summary.period === 'year' ? selectedYear() + '年度' : monthLabel(summary.month)}</strong>
+      </div>
+      <div class="stats-summary admin-detail-stats">
+        <div class="stat-tile primary"><span>总支出</span><strong>¥${money(summary.expense)}</strong></div>
+        <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(summary.income)}</strong></div>
+        <div class="stat-tile"><span>结余</span><strong class="${summary.balance >= 0 ? 'income' : 'expense'}">¥${money(summary.balance)}</strong></div>
+        <div class="stat-tile"><span>消费笔数</span><strong>${summary.billCount || 0}</strong></div>
+        <div class="stat-tile"><span>最高单笔</span><strong>${summary.highestExpense ? `¥${money(summary.highestExpense.amount)}` : '暂无'}</strong></div>
+        <div class="stat-tile"><span>分类数</span><strong>${(summary.ranking || []).length}</strong></div>
+      </div>
+      <div class="admin-detail-section">
+        <h4>支出分类</h4>
+        <div class="rank">
+          ${(summary.ranking || []).length ? summary.ranking.slice(0, 6).map((item) => `
+            <div class="rank-row">
+              <span>${escapeAttr(item.category)}</span>
+              <div class="bar"><span style="width:${Math.max(6, Math.round(item.amount / maxRank * 100))}%"></span></div>
+              <strong>¥${money(item.amount)}</strong>
+            </div>
+          `).join('') : '<p class="muted">这个账期暂无支出分类。</p>'}
+        </div>
+      </div>
+      <div class="admin-detail-section">
+        <h4>账单明细</h4>
+        <div class="admin-bill-list">
+          ${(detail.bills || []).length ? detail.bills.map((bill) => `
+            <div class="admin-bill">
+              <div>
+                <strong>${escapeAttr(bill.category)}</strong>
+                <small>${escapeAttr(bill.date)}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
+              </div>
+              <span class="${bill.type === 'income' ? 'income' : 'expense'}">${bill.type === 'income' ? '+' : '-'}¥${money(bill.amount)}</span>
+            </div>
+          `).join('') : '<p class="muted">这个账期暂无账单。</p>'}
+        </div>
+      </div>
+    </div>
   `
 }
 
@@ -724,21 +777,23 @@ function renderApp() {
               <div><span>用户</span><strong>${state.adminSummary?.totals?.users || 0}</strong></div>
               <div><span>14天新增</span><strong>${state.adminSummary?.totals?.newUsers14d || 0}</strong></div>
             </div>
-            <div class="admin-users">
-              ${(state.adminSummary?.users || []).map((user) => `
-                <div class="admin-user">
-                  <div>
-                    <strong>${escapeAttr(user.nickname)}</strong>
-                    <small>${escapeAttr(user.email)}</small>
-                    <small>最近操作：${formatDateTime(user.lastActivityAt || user.createdAt)}</small>
-                  </div>
-                  <div>
-                    <span>${user.billCount || 0} 笔</span>
-                    <small>账单数</small>
-                  </div>
-                </div>
-              `).join('') || '<p class="muted">暂无用户。</p>'}
-            </div>
+            ${state.adminUserDetail ? renderAdminUserDetail(state.adminUserDetail) : `
+              <div class="admin-users">
+                ${(state.adminSummary?.users || []).map((user) => `
+                  <button class="admin-user" data-admin-user="${escapeAttr(user.id)}" type="button">
+                    <div>
+                      <strong>${escapeAttr(user.nickname)}</strong>
+                      <small>${escapeAttr(user.email)}</small>
+                      <small>最近操作：${formatDateTime(user.lastActivityAt || user.createdAt)}</small>
+                    </div>
+                    <div>
+                      <span>${user.billCount || 0} 笔</span>
+                      <small>查看详情</small>
+                    </div>
+                  </button>
+                `).join('') || '<p class="muted">暂无用户。</p>'}
+              </div>
+            `}
             <button class="btn secondary" id="adminLogoutBtn" type="button">退出管理员</button>
           </div>
         </div>
@@ -753,6 +808,7 @@ async function openAdminEntry() {
   try {
     const data = await api('/api/admin/summary')
     state.adminSummary = data
+    state.adminUserDetail = null
     state.adminPanelOpen = true
     state.adminLoginOpen = false
   } catch (error) {
@@ -884,6 +940,7 @@ function bindAppEvents() {
 
   document.querySelector('#adminPanelCloseBtn')?.addEventListener('click', () => {
     state.adminPanelOpen = false
+    state.adminUserDetail = null
     renderApp()
   })
 
@@ -891,8 +948,27 @@ function bindAppEvents() {
     if (event.target.classList.contains('admin-sheet')) {
       state.adminLoginOpen = false
       state.adminPanelOpen = false
+      state.adminUserDetail = null
       renderApp()
     }
+  })
+
+  document.querySelector('#adminBackBtn')?.addEventListener('click', () => {
+    state.adminUserDetail = null
+    renderApp()
+  })
+
+  document.querySelectorAll('[data-admin-user]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      try {
+        state.adminUserDetail = null
+        const detail = await api(`/api/admin/users/${encodeURIComponent(button.dataset.adminUser)}/detail?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`)
+        state.adminUserDetail = detail
+        renderApp()
+      } catch (error) {
+        toast(error.message)
+      }
+    })
   })
 
   document.querySelector('#adminLoginForm')?.addEventListener('submit', async (event) => {
@@ -905,6 +981,7 @@ function bindAppEvents() {
       })
       const data = await api('/api/admin/summary')
       state.adminSummary = data
+      state.adminUserDetail = null
       state.adminLoginOpen = false
       state.adminPanelOpen = true
       renderApp()
@@ -916,6 +993,7 @@ function bindAppEvents() {
   document.querySelector('#adminLogoutBtn')?.addEventListener('click', async () => {
     await api('/api/admin/logout', { method: 'POST' })
     state.adminSummary = null
+    state.adminUserDetail = null
     state.adminPanelOpen = false
     toast('已退出管理员。')
     renderApp()
