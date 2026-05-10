@@ -1585,8 +1585,8 @@ button {
 
   .hero-bear-button {
     position: static;
-    width: min(42vw, 154px);
-    margin: 4px auto 6px;
+    width: min(48vw, 182px);
+    margin: 2px auto 6px;
     display: block;
     opacity: 1;
   }
@@ -1925,7 +1925,7 @@ button {
 
 @media (max-width: 620px) {
   .hero-bear-button {
-    width: min(42vw, 154px);
+    width: min(48vw, 182px);
   }
 
   .bill-title {
