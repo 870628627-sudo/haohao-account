@@ -1,5 +1,5 @@
 const bearSrc = '/assets/bear-ledger.jpg'
-const canvasFontFamily = '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif'
+const canvasFontFamily = '"PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "SimHei", sans-serif'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '小荷包', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '其他']
@@ -373,7 +373,7 @@ function renderApp() {
               ${periodDateInput('monthInput')}
             </div>
             <div class="list">
-              ${state.bills.length ? state.bills.slice(0, 12).map((bill) => `
+              ${state.bills.length ? state.bills.map((bill) => `
                 <div class="bill">
                   <div>
                     <strong>${bill.category}</strong>
@@ -562,11 +562,11 @@ function renderApp() {
             </div>
             ${state.shareImageUrl ? `
               <img class="share-preview" src="${state.shareImageUrl}" alt="豪豪账单分享图" />
-              <p class="share-tip">手机浏览器不能直接写入相册。点“打开大图”后长按图片，可保存到相册。</p>
+              <p class="share-tip">网页不能静默写入相册。点“保存图片”后，优先唤起系统保存/分享；不支持时会打开大图，长按即可保存。</p>
             ` : '<div class="share-loading">豪豪正在排版账单...</div>'}
             <div class="share-actions">
-              <button class="btn" id="shareNativeBtn" type="button">系统分享</button>
-              <button class="btn secondary" id="shareOpenBtn" type="button">打开大图</button>
+              <button class="btn" id="shareSaveBtn" type="button">保存图片</button>
+              <button class="btn secondary" id="shareNativeBtn" type="button">系统分享</button>
             </div>
           </div>
         </div>
@@ -799,28 +799,20 @@ function bindAppEvents() {
     }
   })
 
-  document.querySelector('#shareOpenBtn')?.addEventListener('click', () => {
+  document.querySelector('#shareSaveBtn')?.addEventListener('click', async () => {
     if (!state.shareImageUrl) return
-    const win = window.open()
-    if (win) {
-      win.document.write(`<title>${summaryLabel()}</title><img src="${state.shareImageUrl}" style="display:block;width:100%;max-width:900px;margin:0 auto;" alt="豪豪账单分享图" />`)
-      win.document.close()
-    } else {
-      toast('请允许弹出窗口后再打开大图。')
-    }
+    await saveShareImage()
   })
 
   document.querySelector('#shareNativeBtn')?.addEventListener('click', async () => {
     if (!state.shareImageUrl) return
     try {
-      const response = await fetch(state.shareImageUrl)
-      const blob = await response.blob()
-      const file = new File([blob], `豪豪记账-${summaryLabel()}.png`, { type: 'image/png' })
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。`, files: [file] })
-      } else {
-        await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。` })
+      const file = await shareImageFile()
+      const payload = { title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。` }
+      if (navigator.canShare?.({ files: [file] })) {
+        payload.files = [file]
       }
+      await navigator.share(payload)
     } catch (error) {
       toast('当前浏览器不支持直接分享，可以先保存图片。')
     }
@@ -976,6 +968,44 @@ function bindAppEvents() {
       }
     })
   })
+}
+
+async function shareImageFile() {
+  const response = await fetch(state.shareImageUrl)
+  const blob = await response.blob()
+  return new File([blob], `haohao-ledger-${state.period}-${state.month}.png`, { type: 'image/png' })
+}
+
+function openShareImage() {
+  const win = window.open()
+  if (win) {
+    win.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>${summaryLabel()}</title><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;background:#fffaf4;"><img src="${state.shareImageUrl}" style="display:block;width:100%;max-width:900px;margin:0 auto;" alt="豪豪账单分享图" /></body></html>`)
+    win.document.close()
+    return true
+  }
+  return false
+}
+
+async function saveShareImage() {
+  try {
+    const file = await shareImageFile()
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。`, files: [file] })
+      return
+    }
+
+    const link = document.createElement('a')
+    link.href = state.shareImageUrl
+    link.download = `haohao-ledger-${state.period}-${state.month}.png`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    toast('如果没有自动保存，请打开大图后长按保存。')
+  } catch (error) {
+    if (!openShareImage()) {
+      toast('请允许弹出窗口后再打开大图保存。')
+    }
+  }
 }
 
 function loadImage(src) {
@@ -1156,10 +1186,6 @@ async function createShareImage() {
     ctx.font = `700 26px ${canvasFontFamily}`
     ctx.fillText('暂无支出排行，豪豪暂时无瓜可吃。', 86, 864)
   }
-
-  ctx.fillStyle = '#987a58'
-  ctx.font = `700 24px ${canvasFontFamily}`
-  ctx.fillText('由豪豪小熊生成 · 继续认真生活，也认真记账', 86, 1168)
 
   return canvas.toDataURL('image/png')
 }
