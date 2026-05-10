@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v52'
-const APP_VERSION = '20260511-travel-detail-tune'
+const CACHE_NAME = 'haohudget-v53'
+const APP_VERSION = '20260511-travel-tab-clean'
 const ASSETS = [
   '/',
   '/index.html',

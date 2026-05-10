@@ -552,23 +552,22 @@ function renderTripDetail() {
   const highest = detail.summary?.highestExpense
   return `
     <div class="travel-workspace trip-detail">
-      <section class="travel-detail-hero budget-${budgetTone(trip)}">
-        <div class="travel-detail-title">
-          <span>旅行</span>
-          <div class="travel-title-row">
-            <h2>${escapeAttr(trip.title)}</h2>
-            <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
-          </div>
-        </div>
-        <div class="travel-detail-budget">
-          <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
-          <button class="travel-budget-button" data-trip-budget type="button"><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></button>
-          <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
-        </div>
-        <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
-      </section>
-
       ${state.activeTripTab === 'overview' ? `
+        <section class="travel-detail-hero budget-${budgetTone(trip)}">
+          <div class="travel-detail-title">
+            <span>旅行</span>
+            <div class="travel-title-row">
+              <h2>${escapeAttr(trip.title)}</h2>
+              <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
+            </div>
+          </div>
+          <div class="travel-detail-budget">
+            <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
+            <button class="travel-budget-button" data-trip-budget type="button"><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></button>
+            <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
+          </div>
+          <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
+        </section>
         <section class="travel-panel">
           <div class="stats-summary">
             <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
