@@ -128,6 +128,57 @@ function travelTip(trip) {
   return '这趟旅行预算还挺稳，可以继续保持快乐但有数。'
 }
 
+function localDateFromString(value) {
+  const [year, month, day] = String(value || '').split('-').map(Number)
+  return Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)
+    ? new Date(year, month - 1, day)
+    : new Date()
+}
+
+function tripDayNumber(trip, date) {
+  const start = localDateFromString(trip.startDate)
+  const current = localDateFromString(date)
+  const diff = Math.round((current - start) / 86400000)
+  return Math.max(1, diff + 1)
+}
+
+function shortDateText(date) {
+  const [, month, day] = String(date || '').split('-')
+  return month && day ? `${month}月${day}日` : date
+}
+
+function buildTripTimeline(trip, bills) {
+  const groups = new Map()
+  ;[...(bills || [])].sort((a, b) => {
+    const dateSort = String(a.date || '').localeCompare(String(b.date || ''))
+    return dateSort || String(a.createdAt || '').localeCompare(String(b.createdAt || ''))
+  }).forEach((bill) => {
+    const date = bill.date || trip.startDate || beijingDateString()
+    if (!groups.has(date)) {
+      groups.set(date, {
+        date,
+        dayNumber: tripDayNumber(trip, date),
+        total: 0,
+        items: []
+      })
+    }
+    const group = groups.get(date)
+    if (bill.type !== 'income') {
+      group.total += Number(bill.amount || 0)
+    }
+    group.items.push(bill)
+  })
+  return [...groups.values()]
+}
+
+function timelineDayNote(day) {
+  if (!day.items.length) return '这天还没有记录。'
+  const top = day.items
+    .filter((item) => item.type !== 'income')
+    .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))[0]
+  return top ? `这天主要花在${top.category}上。` : '这天有收入记录，旅途账面变轻了一点。'
+}
+
 function beijingParts(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: BEIJING_TIME_ZONE,
@@ -548,7 +599,7 @@ function renderTripDetail() {
   if (!trip) return renderTravelHome()
   const bills = detail.bills || []
   const ranking = detail.summary?.ranking || []
-  const maxRank = Math.max(...ranking.map((item) => item.amount), 1)
+  const timeline = buildTripTimeline(trip, bills)
   const highest = detail.summary?.highestExpense
   return `
     <div class="travel-workspace trip-detail">
@@ -646,15 +697,47 @@ function renderTripDetail() {
 
       ${state.activeTripTab === 'stats' ? `
         <section class="travel-panel">
-          <div class="rank">
-            ${ranking.length ? ranking.map((item) => `
-              <div class="rank-row">
-                <span>${escapeAttr(item.category)}</span>
-                <div class="bar"><span style="width:${Math.max(6, Math.round(item.amount / maxRank * 100))}%"></span></div>
-                <strong>¥${money(item.amount)}</strong>
-              </div>
-            `).join('') : '<p class="muted">暂无统计，先记几笔旅行花费。</p>'}
+          <div class="trip-journey-head">
+            <div>
+              <span>消费历程</span>
+              <strong>${escapeAttr(trip.title)}</strong>
+            </div>
+            <em>${timeline.length} 天 · ${bills.length} 笔</em>
           </div>
+          <div class="trip-timeline">
+            ${timeline.length ? timeline.map((day) => `
+              <article class="trip-day">
+                <div class="trip-day-marker"></div>
+                <div class="trip-day-card">
+                  <div class="trip-day-head">
+                    <div>
+                      <span>第 ${day.dayNumber} 天</span>
+                      <strong>${shortDateText(day.date)}</strong>
+                    </div>
+                    <em>¥${money(day.total)}</em>
+                  </div>
+                  <p>${timelineDayNote(day)}</p>
+                  <div class="trip-day-items">
+                    ${day.items.map((bill) => `
+                      <div class="trip-day-item">
+                        <span>${categoryIcon(bill.category)}</span>
+                        <div>
+                          <strong>${escapeAttr(bill.category)}</strong>
+                          <small>${escapeAttr(bill.note || bill.payer || '旅行消费')}</small>
+                        </div>
+                        <em class="${bill.type === 'income' ? 'income' : 'expense'}">${bill.type === 'income' ? '+' : '-'}¥${money(bill.amount)}</em>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </article>
+            `).join('') : '<p class="muted">还没有消费历程。先在旅行里记一笔，豪豪再帮你串成时间线。</p>'}
+          </div>
+          ${timeline.length ? `
+            <div class="trip-journey-summary">
+              这趟旅行一共记录 ${bills.length} 笔，花费 ¥${money(trip.expense)}${highest ? `，最高单笔是 ${highest.category} ¥${money(highest.amount)}` : ''}。
+            </div>
+          ` : ''}
         </section>
       ` : ''}
     </div>
