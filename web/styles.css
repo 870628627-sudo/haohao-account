@@ -1359,8 +1359,6 @@ button {
   }
 
   .app-shell[data-active-view="home"] {
-    display: flex;
-    flex-direction: column;
     height: 100dvh;
     overflow: hidden;
     background: linear-gradient(180deg, #fffaf4 0 76px, #fff0c8 76px, #fff4dc 62%, #fffaf4 100%);
@@ -1368,7 +1366,6 @@ button {
   }
 
   .app-shell[data-active-view="home"] .layout {
-    flex: 0 0 auto;
     overflow: visible;
   }
 
@@ -1376,6 +1373,10 @@ button {
     display: block;
     height: auto;
     min-height: 0;
+  }
+
+  .app-shell[data-active-view="home"] .topbar {
+    top: -14px;
   }
 
   .topbar,
