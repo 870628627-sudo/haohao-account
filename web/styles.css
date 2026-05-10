@@ -221,7 +221,8 @@ button {
   display: block;
   margin-top: 6px;
   font-size: 22px;
-  overflow-wrap: anywhere;
+  line-height: 1.08;
+  white-space: nowrap;
 }
 
 .hero-budget {
@@ -235,8 +236,7 @@ button {
   background: rgba(255, 254, 253, 0.84);
 }
 
-.hero-budget-head,
-.hero-budget-meta {
+.hero-budget-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -256,7 +256,9 @@ button {
 
 .hero-budget-meta {
   margin-top: 9px;
-  flex-wrap: wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .budget-progress,
@@ -714,6 +716,12 @@ button {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.45;
+}
+
+.budget-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-tool-body {
@@ -1348,18 +1356,22 @@ button {
   }
 
   .mini-card {
-    padding: 10px 12px;
+    padding: 10px 8px;
     border-radius: 16px;
   }
 
   .mini-card strong {
-    font-size: 17px;
+    font-size: clamp(13px, 3.55vw, 17px);
   }
 
   .hero-budget {
     margin-top: 8px;
     padding: 12px;
     border-radius: 16px;
+  }
+
+  .hero-budget-meta {
+    font-size: 12px;
   }
 
   .section-title {

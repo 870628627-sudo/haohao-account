@@ -56,6 +56,12 @@ function budgetStatusText(summary) {
   return `预算 ¥${money(summary.budget)} · 剩余 ¥${money(summary.budgetLeft)}`
 }
 
+function budgetInlineText(summary) {
+  return Number(summary.budget || 0)
+    ? `预算 ¥${money(summary.budget)} · 剩余 ¥${money(summary.budgetLeft)} · 支出 ¥${money(summary.expense)}`
+    : `本月还没设置预算 · 支出 ¥${money(summary.expense)}`
+}
+
 function monthLabel(month) {
   const [year, monthNumber] = String(month || '').split('-')
   if (!year || !monthNumber) return '当前月份'
@@ -146,6 +152,7 @@ function renderProfileSection(summary) {
         <button class="${isBudget ? 'active' : ''}" data-profile-tool="budget" type="button">
           <strong>月度预算 <em>${budgetPercent(summary)}%</em></strong>
           <div class="budget-chip-progress budget-${budgetTone(summary)}"><span style="width:${budgetBarWidth(summary)}%"></span></div>
+          <span class="budget-chip-text">${budgetStatusText(summary)}</span>
         </button>
         <button class="${isFixed ? 'active' : ''}" data-profile-tool="fixed" type="button">
           <strong>固定支出项目</strong>
@@ -461,10 +468,7 @@ function renderApp() {
                 <strong>${budgetPercent(summary)}%</strong>
               </div>
               <div class="budget-progress"><span style="width:${budgetBarWidth(summary)}%"></span></div>
-              <div class="hero-budget-meta">
-                <span>${budgetStatusText(summary)}</span>
-                <span>支出 ¥${money(summary.expense)}</span>
-              </div>
+              <div class="hero-budget-meta">${budgetInlineText(summary)}</div>
             </div>
           </section>
 
