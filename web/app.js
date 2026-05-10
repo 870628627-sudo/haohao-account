@@ -1336,7 +1336,7 @@ function drawPill(ctx, x, y, text, fill, color) {
 
 function drawMetric(ctx, x, y, width, label, value, color) {
   roundedRect(ctx, x, y, width, 116, 22)
-  ctx.fillStyle = '#fff9f1'
+  ctx.fillStyle = 'rgba(255, 249, 241, 0.88)'
   ctx.fill()
   ctx.strokeStyle = '#f1e2cc'
   ctx.lineWidth = 2
@@ -1347,6 +1347,15 @@ function drawMetric(ctx, x, y, width, label, value, color) {
   ctx.fillStyle = color || '#352417'
   ctx.font = `900 34px ${canvasFontFamily}`
   ctx.fillText(value, x + 22, y + 84)
+}
+
+function drawSoftPanel(ctx, x, y, width, height, radius = 26) {
+  roundedRect(ctx, x, y, width, height, radius)
+  ctx.fillStyle = 'rgba(255, 254, 253, 0.72)'
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(241, 226, 204, 0.72)'
+  ctx.lineWidth = 2
+  ctx.stroke()
 }
 
 async function createShareImage() {
@@ -1369,13 +1378,6 @@ async function createShareImage() {
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-  roundedRect(ctx, 54, 54, 792, 1172, 34)
-  ctx.fillStyle = 'rgba(255, 254, 253, 0.94)'
-  ctx.fill()
-  ctx.strokeStyle = '#f1e2cc'
-  ctx.lineWidth = 2
-  ctx.stroke()
-
   let bear = null
   try {
     bear = await loadImage(bearSrc)
@@ -1384,6 +1386,14 @@ async function createShareImage() {
   }
 
   if (bear) {
+    ctx.save()
+    ctx.globalAlpha = 0.13
+    ctx.beginPath()
+    ctx.arc(450, 620, 310, 0, Math.PI * 2)
+    ctx.clip()
+    ctx.drawImage(bear, 140, 310, 620, 620)
+    ctx.restore()
+
     ctx.save()
     ctx.beginPath()
     ctx.arc(136, 140, 50, 0, Math.PI * 2)
@@ -1400,12 +1410,16 @@ async function createShareImage() {
     ctx.fillText('豪', 119, 153)
   }
 
+  const nickname = state.user?.nickname || '豪豪用户'
   ctx.fillStyle = '#5b351c'
   ctx.font = `900 42px ${canvasFontFamily}`
   ctx.fillText('豪豪记账', 214, 130)
   ctx.fillStyle = '#987a58'
   ctx.font = `700 24px ${canvasFontFamily}`
   ctx.fillText(`${summaryLabel()} · ${shareMessage.title}`, 214, 170)
+  ctx.fillStyle = '#6d5034'
+  ctx.font = `800 22px ${canvasFontFamily}`
+  ctx.fillText(`${nickname} 的账单`, 214, 204)
 
   drawPill(ctx, 86, 232, '本期概览', '#fff0c8', '#5b351c')
   ctx.fillStyle = '#352417'
@@ -1419,11 +1433,7 @@ async function createShareImage() {
   drawMetric(ctx, 336, 454, 228, '总支出', `¥${money(summary.expense)}`, '#a44b35')
   drawMetric(ctx, 586, 454, 228, '结余', `¥${money(summary.balance)}`, summary.balance >= 0 ? '#327451' : '#a44b35')
 
-  roundedRect(ctx, 86, 616, 728, 118, 24)
-  ctx.fillStyle = '#fff9f1'
-  ctx.fill()
-  ctx.strokeStyle = '#f1e2cc'
-  ctx.stroke()
+  drawSoftPanel(ctx, 86, 616, 728, 118, 24)
   ctx.fillStyle = '#987a58'
   ctx.font = `800 22px ${canvasFontFamily}`
   ctx.fillText('预算使用', 112, 654)
@@ -1440,6 +1450,7 @@ async function createShareImage() {
   ctx.fillStyle = '#5b351c'
   ctx.font = `900 32px ${canvasFontFamily}`
   ctx.fillText('支出结构', 86, 810)
+  drawSoftPanel(ctx, 86, 840, 728, 320, 28)
   const pieItems = pieChartData(summary.ranking)
   if (pieItems.length) {
     drawPieChart(ctx, pieItems, 246, 976, 128)
