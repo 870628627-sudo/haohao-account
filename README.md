@@ -539,3 +539,130 @@ pm2 logs haohao-account
 - 没有进入 `/www/haohao-account`
 - 项目没有完整拉下来
 - 端口 `5177` 被占用
+
+## 15. GitHub 推送后自动部署到阿里云
+
+仓库已经内置自动部署文件：
+
+```text
+.github/workflows/deploy_aliyun.yml
+scripts/deploy_aliyun.sh
+```
+
+效果：
+
+```text
+本地提交代码 -> git push 到 GitHub main 分支 -> GitHub Actions 自动 SSH 到阿里云 -> 服务器拉取最新代码 -> 备份 SQLite -> 安装依赖 -> 重启 PM2
+```
+
+### 15.1 服务器先准备好环境
+
+第一次使用自动部署前，服务器至少要有：
+
+```bash
+apt update
+apt install -y git curl nginx
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+npm install -g pm2
+```
+
+确认版本：
+
+```bash
+node -v
+npm -v
+pm2 -v
+```
+
+Node 需要是 `22.x`，因为项目使用了 `node:sqlite`。
+
+### 15.2 给 GitHub Actions 准备 SSH 密钥
+
+在你的电脑上生成一组专门用于部署的 SSH key：
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-haohao-account" -f ~/.ssh/haohao_account_deploy
+```
+
+把公钥内容复制到阿里云服务器：
+
+```bash
+cat ~/.ssh/haohao_account_deploy.pub
+```
+
+登录服务器后写入：
+
+```bash
+mkdir -p ~/.ssh
+nano ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+把私钥内容复制到 GitHub Secret：
+
+```bash
+cat ~/.ssh/haohao_account_deploy
+```
+
+### 15.3 在 GitHub 配置 Secrets
+
+进入 GitHub 仓库：
+
+```text
+Settings -> Secrets and variables -> Actions -> New repository secret
+```
+
+添加：
+
+```text
+ALIYUN_HOST      阿里云服务器公网 IP
+ALIYUN_USER      SSH 用户，例如 root
+ALIYUN_SSH_KEY   上一步生成的私钥完整内容
+ALIYUN_PORT      SSH 端口，默认 22；如果没改过也建议填 22
+```
+
+### 15.4 第一次触发部署
+
+把代码推送到 GitHub：
+
+```bash
+git add .
+git commit -m "Add Aliyun auto deploy"
+git push origin main
+```
+
+然后进入：
+
+```text
+GitHub 仓库 -> Actions -> Deploy to Aliyun
+```
+
+看到绿色成功后，访问：
+
+```text
+http://你的服务器公网IP
+```
+
+或你的域名。
+
+### 15.5 日常更新
+
+之后每次更新只需要：
+
+```bash
+git add .
+git commit -m "Update app"
+git push origin main
+```
+
+GitHub Actions 会自动部署。
+
+部署脚本每次更新前会备份数据库到：
+
+```text
+/backup/haohao-account/年月日-时分秒/
+```
+
+如果你把 GitHub 仓库改成私有仓库，服务器执行 `git pull` 时需要能访问该仓库。最简单的做法是给服务器配置 GitHub deploy key，或者继续保持仓库公开。

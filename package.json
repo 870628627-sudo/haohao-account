@@ -9,6 +9,6 @@
     "dev": "node server.cjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }
