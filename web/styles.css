@@ -1355,7 +1355,7 @@ button {
 
   .shell {
     width: 100%;
-    padding: 14px 14px 88px;
+    padding: 14px 18px 88px;
   }
 
   .app-shell[data-active-view="home"] {
@@ -1389,8 +1389,8 @@ button {
     position: sticky;
     top: 0;
     z-index: 5;
-    margin: -14px -14px 12px;
-    padding: 10px 14px;
+    margin: -14px -18px 12px;
+    padding: 10px 18px;
     background: rgba(255, 250, 244, 0.94);
     backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(241, 226, 204, 0.78);
@@ -1462,8 +1462,8 @@ button {
 
   .hero {
     min-height: auto;
-    margin: 0 -14px;
-    padding: 12px 14px 14px;
+    margin: 0 -18px;
+    padding: 12px 18px 14px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -1559,6 +1559,15 @@ button {
   .hero-budget-meta {
     margin-top: 7px;
     font-size: 12px;
+  }
+
+  .profile-panel {
+    overflow: visible;
+  }
+
+  .profile-tool-tabs button {
+    border-radius: 22px;
+    overflow: hidden;
   }
 
   .section-title {
