@@ -161,8 +161,11 @@ button {
   position: relative;
   min-height: 340px;
   overflow: hidden;
-  background: #fff0c8;
-  border-color: transparent;
+  padding: 4px 0 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
