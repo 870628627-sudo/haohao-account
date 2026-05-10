@@ -1361,7 +1361,7 @@ button {
   .app-shell[data-active-view="home"] {
     height: 100dvh;
     overflow: hidden;
-    background: linear-gradient(180deg, #fffaf4 0 76px, #fff0c8 76px, #fff4dc 62%, #fffaf4 100%);
+    background: linear-gradient(180deg, #fffaf4 0 63px, #fff0c8 63px, #fff4dc 62%, #fffaf4 100%);
     padding-bottom: 78px;
   }
 
@@ -1451,6 +1451,13 @@ button {
     border-radius: 22px;
     padding: 18px;
     box-shadow: 0 10px 32px rgba(87, 54, 24, 0.06);
+  }
+
+  .layout > .stack > .view-section.active-view:not(.hero) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .hero {

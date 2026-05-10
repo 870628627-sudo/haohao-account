@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v38'
-const APP_VERSION = '20260511-home-topbar-align'
+const CACHE_NAME = 'haohudget-v39'
+const APP_VERSION = '20260511-mobile-unframed'
 const ASSETS = [
   '/',
   '/index.html',
