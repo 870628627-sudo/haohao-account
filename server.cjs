@@ -376,6 +376,27 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/change-password') {
+    const body = await readBody(req)
+    const currentPassword = String(body.currentPassword || '')
+    const newPassword = String(body.newPassword || '')
+
+    if (!verifyPassword(currentPassword, user.password_hash)) {
+      json(res, 400, { error: '当前密码不正确' })
+      return
+    }
+
+    if (newPassword.length < 6) {
+      json(res, 400, { error: '新密码至少 6 位' })
+      return
+    }
+
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      .run(hashPassword(newPassword), user.id)
+    json(res, 200, { ok: true })
+    return
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/summary') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
     const period = normalizePeriod(url.searchParams.get('period') || '')

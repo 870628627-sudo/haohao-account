@@ -13,6 +13,8 @@ const state = {
   bills: [],
   summary: null,
   fixedItems: [],
+  accountPanelOpen: false,
+  heroMessageIndex: Math.floor(Math.random() * 12),
   billDraft: {
     amount: '',
     date: new Date().toISOString().slice(0, 10),
@@ -30,6 +32,40 @@ function monthLabel(month) {
   const [year, monthNumber] = String(month || '').split('-')
   if (!year || !monthNumber) return '当前月份'
   return `${year}年${monthNumber}月`
+}
+
+function formatDateTime(value) {
+  if (!value) return '暂无'
+  return String(value).replace('T', ' ').slice(0, 16)
+}
+
+const heroMessages = [
+  { title: '钱包还站得住吗？', text: '记账不是抠门，是给钱安排一个明白的去处。' },
+  { title: '今天的钱有去处了吗？', text: '每一笔都写清楚，月底就少一点悬疑片剧情。' },
+  { title: '豪豪开始巡账了', text: '收入、支出、结余都在这里，钱包有没有委屈一眼就知道。' },
+  { title: '先看余额，再谈快乐', text: '快乐可以有，预算也要坐在同一张桌上。' },
+  { title: '本月消费天气预报', text: '目前账面已更新，豪豪建议出门前先看一眼钱包气压。' },
+  { title: '钱去哪儿了？', text: '别让它无声失踪，记下来就有迹可循。' },
+  { title: '今日钱包体检', text: '不怕花钱，就怕花完以后谁也说不清。' },
+  { title: '豪豪正在盯账', text: '该花的花，该省的省，乱跑的钱一个都别想躲。' },
+  { title: '预算线还好吗？', text: '每次打开看一眼，月底就少一次心跳加速。' },
+  { title: '账本醒了', text: '它不审判生活，它只帮你看清生活花在哪里。' },
+  { title: '钱包今日上线', text: '先把账摆明白，再决定要不要奖励自己。' },
+  { title: '豪豪给你盘一盘', text: '数字不骗人，但豪豪会负责把话说得好听一点。' }
+]
+
+function refreshHeroMessage() {
+  state.heroMessageIndex = Math.floor(Math.random() * heroMessages.length)
+}
+
+function currentHeroMessage(summary) {
+  if (summary.usedRate >= 1) {
+    return { title: '预算已经拉响警报', text: '本月预算已经花穿，豪豪建议今天先别和支付软件见面。' }
+  }
+  if (summary.usedRate >= 0.8) {
+    return { title: '钱包进入观察期', text: '预算使用超过八成，接下来每一笔都值得认真看一眼。' }
+  }
+  return heroMessages[state.heroMessageIndex % heroMessages.length]
 }
 
 function escapeAttr(value) {
@@ -251,6 +287,7 @@ function renderAuth(mode = 'login') {
         body: JSON.stringify(Object.fromEntries(form.entries()))
       })
       state.user = data.user
+      refreshHeroMessage()
       await loadDashboard()
       toast(mode === 'login' ? '欢迎回来，豪豪已经开始盯账。' : '注册成功，豪豪正式上岗。')
     } catch (error) {
@@ -263,6 +300,7 @@ function renderApp() {
   const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [], label: state.month, averageExpense: 0, highestExpense: null, billCount: 0 }
   const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
   const categories = state.billType === 'income' ? incomeCategories : expenseCategories
+  const heroMessage = currentHeroMessage(summary)
   if (!categories.includes(state.selectedCategory)) {
     state.selectedCategory = categories[0]
   }
@@ -271,7 +309,9 @@ function renderApp() {
     <div class="shell app-shell" data-active-view="${state.activeView}">
       <header class="topbar">
         <div class="brand">
-          <img src="${bearSrc}" alt="豪豪小熊" />
+          <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
+            <img src="${bearSrc}" alt="豪豪小熊" />
+          </button>
           <div>
             <h1>豪豪记账</h1>
             <p>个人账本 · ${state.month}</p>
@@ -287,13 +327,15 @@ function renderApp() {
         <div class="stack">
           <section class="card hero view-section ${state.activeView === 'home' ? 'active-view' : ''}" data-view="home">
             <div class="hero-copy">
-              <div class="eyebrow">本月概览</div>
-              <div class="hero-date">
-                <span>当前账期</span>
-                <strong>${monthLabel(state.month)}</strong>
+              <div class="hero-meta">
+                <div class="eyebrow">本月概览</div>
+                <div class="hero-date">
+                  <span>当前账期</span>
+                  <strong>${monthLabel(state.month)}</strong>
+                </div>
               </div>
-              <h2>钱包还站得住吗？</h2>
-              <p class="hero-text">${summary.usedRate >= 1 ? '预算已经花穿，豪豪建议今天先别和支付软件见面。' : '记账不是抠门，是给钱安排一个明白的去处。'}</p>
+              <h2>${heroMessage.title}</h2>
+              <p class="hero-text">${heroMessage.text}</p>
             </div>
             <img class="hero-bear" src="${bearSrc}" alt="豪豪小熊" />
             <div class="hero-stats">
@@ -443,6 +485,32 @@ function renderApp() {
         <button class="${state.activeView === 'stats' ? 'active' : ''}" data-view-tab="stats"><span>◔</span>统计</button>
         <button class="${state.activeView === 'profile' ? 'active' : ''}" data-view-tab="profile"><span>◇</span>固定</button>
       </nav>
+
+      ${state.accountPanelOpen ? `
+        <div class="account-sheet" role="dialog" aria-modal="true" aria-label="用户详情">
+          <div class="account-card">
+            <div class="section-title">
+              <div>
+                <h3>用户详情</h3>
+                <p class="muted">豪豪知道是谁在认真记账。</p>
+              </div>
+              <button class="btn secondary account-close" id="accountCloseBtn" type="button">关闭</button>
+            </div>
+            <div class="account-details">
+              <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
+              <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
+              <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
+            </div>
+            <form class="form account-form" id="passwordForm">
+              <div class="section-title account-form-title"><h3>更改密码</h3></div>
+              <input class="input" name="currentPassword" type="password" placeholder="当前密码" required />
+              <input class="input" name="newPassword" type="password" placeholder="新密码，至少 6 位" required />
+              <input class="input" name="confirmPassword" type="password" placeholder="再次输入新密码" required />
+              <button class="btn" type="submit">保存新密码</button>
+            </form>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `
 
@@ -450,9 +518,51 @@ function renderApp() {
 }
 
 function bindAppEvents() {
+  document.querySelector('#accountBtn').addEventListener('click', () => {
+    state.accountPanelOpen = true
+    renderApp()
+  })
+
+  document.querySelector('#accountCloseBtn')?.addEventListener('click', () => {
+    state.accountPanelOpen = false
+    renderApp()
+  })
+
+  document.querySelector('.account-sheet')?.addEventListener('click', (event) => {
+    if (event.target.classList.contains('account-sheet')) {
+      state.accountPanelOpen = false
+      renderApp()
+    }
+  })
+
+  document.querySelector('#passwordForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const currentPassword = String(form.get('currentPassword') || '')
+    const newPassword = String(form.get('newPassword') || '')
+    const confirmPassword = String(form.get('confirmPassword') || '')
+    if (newPassword !== confirmPassword) {
+      toast('两次新密码不一致。')
+      return
+    }
+
+    try {
+      await api('/api/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword })
+      })
+      state.accountPanelOpen = false
+      renderApp()
+      toast('密码已更新。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
   document.querySelector('#logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' })
     state.user = null
+    state.accountPanelOpen = false
     renderAuth()
   })
 
@@ -615,6 +725,7 @@ async function init() {
     const data = await api('/api/me')
     state.user = data.user
     if (state.user) {
+      refreshHeroMessage()
       await loadDashboard()
     } else {
       renderAuth()

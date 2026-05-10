@@ -56,6 +56,18 @@ button {
   gap: 12px;
 }
 
+.brand-bear-button {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+
 .brand img,
 .avatar {
   width: 52px;
@@ -124,6 +136,13 @@ button {
   max-width: 470px;
 }
 
+.hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .eyebrow {
   color: var(--muted);
   font-size: 14px;
@@ -135,7 +154,6 @@ button {
   grid-template-columns: auto auto;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
   padding: 8px 12px;
   border: 1px solid rgba(91, 53, 28, 0.16);
   border-radius: 16px;
@@ -586,6 +604,67 @@ button {
   font-weight: 800;
 }
 
+.account-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(53, 36, 23, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.account-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
+}
+
+.account-close {
+  min-height: 38px;
+}
+
+.account-details {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.account-details div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff9f1;
+}
+
+.account-details span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.account-details strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.account-form {
+  padding-top: 16px;
+  border-top: 1px solid #f5eadc;
+}
+
+.account-form-title {
+  margin-bottom: 0;
+}
+
 .auth-page {
   min-height: 100vh;
   display: grid;
@@ -780,6 +859,11 @@ button {
     height: 42px;
   }
 
+  .brand-bear-button {
+    width: 42px;
+    height: 42px;
+  }
+
   .brand h1 {
     font-size: 18px;
   }
@@ -832,12 +916,17 @@ button {
     line-height: 1.5;
   }
 
+  .hero-meta {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+  }
+
   .hero-date {
     display: grid;
-    grid-template-columns: 1fr auto;
-    width: 100%;
+    grid-template-columns: auto auto;
+    justify-content: end;
     min-height: 48px;
-    margin-top: 10px;
     padding: 0 14px;
     border-radius: 16px;
   }
@@ -1030,6 +1119,18 @@ button {
   .bill-actions .btn {
     flex: 0 0 auto;
     min-height: 36px;
+  }
+
+  .account-sheet {
+    place-items: end center;
+    padding: 14px;
+  }
+
+  .account-card {
+    width: 100%;
+    max-height: calc(100dvh - 28px);
+    border-radius: 22px;
+    padding: 18px;
   }
 
   .category-grid {
