@@ -763,7 +763,7 @@ button {
 
 .admin-metrics {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 16px;
 }
@@ -1352,12 +1352,29 @@ button {
     padding: 14px;
   }
 
+  .admin-sheet {
+    place-items: stretch;
+    padding: 0;
+  }
+
   .share-card,
   .admin-card {
     width: 100%;
     max-height: calc(100dvh - 28px);
     border-radius: 22px;
     padding: 18px;
+  }
+
+  .admin-card {
+    max-height: none;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .admin-panel-card {
+    width: 100%;
   }
 
   .admin-metrics {

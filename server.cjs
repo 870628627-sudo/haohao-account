@@ -408,15 +408,14 @@ async function handleApi(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/admin/summary') {
     if (!requireAdmin(req, res)) return
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
     const users = db.prepare(`
       SELECT
         users.id,
         users.email,
         users.nickname,
         users.created_at,
-        COUNT(bills.id) AS bill_count,
-        COALESCE(SUM(CASE WHEN bills.type = 'income' THEN bills.amount ELSE 0 END), 0) AS income,
-        COALESCE(SUM(CASE WHEN bills.type = 'expense' THEN bills.amount ELSE 0 END), 0) AS expense
+        COUNT(bills.id) AS bill_count
       FROM users
       LEFT JOIN bills ON bills.user_id = users.id
       GROUP BY users.id
@@ -425,16 +424,11 @@ async function handleApi(req, res) {
     `).all()
     const totals = {
       users: db.prepare('SELECT COUNT(*) AS count FROM users').get().count,
-      bills: db.prepare('SELECT COUNT(*) AS count FROM bills').get().count,
-      fixedItems: db.prepare('SELECT COUNT(*) AS count FROM fixed_items WHERE enabled = 1').get().count,
-      income: db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE type = 'income'").get().total,
-      expense: db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE type = 'expense'").get().total
+      newUsers14d: db.prepare('SELECT COUNT(*) AS count FROM users WHERE created_at >= ?').get(fourteenDaysAgo).count
     }
     json(res, 200, { totals, users: users.map(cleanUser).map((user, index) => ({
       ...user,
-      billCount: users[index].bill_count,
-      income: users[index].income,
-      expense: users[index].expense
+      billCount: users[index].bill_count
     })) })
     return
   }

@@ -598,15 +598,13 @@ function renderApp() {
             <div class="section-title">
               <div>
                 <h3>管理员系统</h3>
-                <p class="muted">豪豪后台 · 用户和账本概览</p>
+                <p class="muted">豪豪后台 · 用户增长概览</p>
               </div>
               <button class="btn secondary account-close" id="adminPanelCloseBtn" type="button">关闭</button>
             </div>
             <div class="admin-metrics">
               <div><span>用户</span><strong>${state.adminSummary?.totals?.users || 0}</strong></div>
-              <div><span>账单</span><strong>${state.adminSummary?.totals?.bills || 0}</strong></div>
-              <div><span>固定项</span><strong>${state.adminSummary?.totals?.fixedItems || 0}</strong></div>
-              <div><span>总支出</span><strong>¥${money(state.adminSummary?.totals?.expense || 0)}</strong></div>
+              <div><span>14天新增</span><strong>${state.adminSummary?.totals?.newUsers14d || 0}</strong></div>
             </div>
             <div class="admin-users">
               ${(state.adminSummary?.users || []).map((user) => `
@@ -617,7 +615,7 @@ function renderApp() {
                   </div>
                   <div>
                     <span>${user.billCount || 0} 笔</span>
-                    <small>支出 ¥${money(user.expense)}</small>
+                    <small>账单数</small>
                   </div>
                 </div>
               `).join('') || '<p class="muted">暂无用户。</p>'}
