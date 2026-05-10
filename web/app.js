@@ -26,6 +26,12 @@ function money(value) {
   return Number(value || 0).toFixed(2)
 }
 
+function monthLabel(month) {
+  const [year, monthNumber] = String(month || '').split('-')
+  if (!year || !monthNumber) return '当前月份'
+  return `${year}年${monthNumber}月`
+}
+
 function escapeAttr(value) {
   return String(value || '')
     .replaceAll('&', '&amp;')
@@ -124,13 +130,77 @@ function judge(message) {
   setTimeout(() => el.remove(), 5200)
 }
 
-function bearComment(record) {
-  if (record.type === 'income') return '收入到账，钱包终于等到一点尊重。'
-  if (record.amount >= 100 && !['交通', '水电燃气', '房租', '话费网费', '医疗'].includes(record.category)) {
-    return '这笔花得挺猛，钱包刚才好像翻了个白眼。'
+function pickComment(record, comments) {
+  const seedText = `${record.id || ''}${record.category || ''}${record.date || ''}${record.amount || ''}`
+  let seed = 0
+  for (let index = 0; index < seedText.length; index += 1) {
+    seed = (seed + seedText.charCodeAt(index) * (index + 1)) % 9973
   }
-  if (record.amount <= 20) return '这笔很克制，豪豪今天允许你夸自己一句。'
-  return '记下来了，至少你没有让钱消失得不明不白。'
+  return comments[seed % comments.length]
+}
+
+function bearComment(record) {
+  const amount = Number(record.amount || 0)
+  const category = record.category || '其他'
+  const necessaryCategories = ['交通', '水电燃气', '房租', '话费网费', '医疗', '日用品']
+
+  if (record.type === 'income') {
+    if (amount >= 3000) return pickComment(record, ['大额收入到账，豪豪宣布钱包今天恢复编制。', '这笔收入很顶，先别急着奖励自己，豪豪已经盯住购物车了。', '钱包突然精神了，但豪豪建议先把预算排个队。'])
+    if (amount >= 500) return pickComment(record, ['收入到账，钱包终于等到一点尊重。', '这笔进账不错，豪豪建议先存一口，再花一口。', '钱来了，豪豪提醒你别让它刚进门就下班。'])
+    return pickComment(record, ['小收入也要记，豪豪给认真生活加一分。', '这笔进账不大，但它很清白，记上就赢。', '零钱入账也值得有姓名，豪豪已登记。'])
+  }
+
+  if (necessaryCategories.includes(category)) {
+    if (amount >= 1000) return pickComment(record, ['必要支出也挺重，豪豪建议月底给它单独开个会。', '这笔是刚需，但金额不小，钱包需要深呼吸。', '逃不掉的支出已记录，豪豪先不吐槽你，吐槽账单。'])
+    if (amount >= 200) return pickComment(record, ['刚需支出通过，豪豪只提醒一句：记得看本月结余。', '这类钱花得有理由，但也别让它悄悄长胖。', '必要项目已归档，钱包没有喊冤，只是有点沉默。'])
+    return pickComment(record, ['这笔刚需很正常，记下来就已经赢一半。', '必要支出别内耗，豪豪批准通过。', '这钱花得明白，钱包暂时没有意见。'])
+  }
+
+  if (['早餐', '午餐', '晚餐'].includes(category)) {
+    if (amount <= 15) return pickComment(record, ['这顿饭很克制，豪豪怀疑你偷偷会过日子。', '餐饮控制得不错，钱包今天没被油烟熏晕。', '这一餐很稳，豪豪给你盖个省钱章。'])
+    if (amount <= 40) return pickComment(record, ['这顿饭价格正常，豪豪暂时放下计算器。', '吃饭是正事，这笔看起来还算讲道理。', '这餐没有离谱，钱包保持冷静。'])
+    if (amount <= 100) return pickComment(record, ['这顿饭有点豪华，豪豪已经开始翻本月预算了。', '餐饮支出抬头了，豪豪建议下一餐朴素一点。', '吃得不错，钱包也确实瘦了一点。'])
+    return pickComment(record, ['这顿饭是镶金边了吗？豪豪替钱包沉默三秒。', '餐饮单笔破百，豪豪建议把它列入重点观察。', '这顿饭很有排面，但预算可能没这么爱面子。'])
+  }
+
+  if (['水果', '零食饮料'].includes(category)) {
+    if (amount <= 20) return pickComment(record, ['小零食可以，豪豪允许快乐有一点预算。', '这笔嘴馋支出还算克制，钱包没报警。', '甜的可以有，但豪豪已经开始数次数了。'])
+    if (amount <= 50) return pickComment(record, ['零食饮料有点活跃，豪豪建议它明天低调。', '这笔快乐不算便宜，钱包正在小声记仇。', '嘴巴开心了，预算表开始皱眉。'])
+    return pickComment(record, ['零食饮料花到这个数，豪豪建议快乐先冷静两天。', '这不是嘴馋，这是预算的支线剧情。', '喝的吃的很开心，钱包看起来不太开心。'])
+  }
+
+  if (category === '交通') {
+    if (amount <= 20) return pickComment(record, ['交通费很正常，钱包没有发出求救信号。', '这趟出行价格友好，豪豪批准通行。', '交通支出稳定，豪豪暂时不念叨。'])
+    if (amount <= 80) return pickComment(record, ['这笔交通费略有存在感，豪豪建议看看是不是能优化路线。', '出门成本上来了，钱包可能想申请居家办公。', '交通费不算离谱，但豪豪已经记住它了。'])
+    return pickComment(record, ['这趟路花得挺远，豪豪建议确认不是钱包在旅行。', '交通单笔偏高，豪豪把它放进观察名单。', '路是走到了，预算也跟着走了一截。'])
+  }
+
+  if (['王者荣耀', '保卫向日葵', '娱乐'].includes(category)) {
+    if (amount <= 30) return pickComment(record, ['娱乐小额通过，豪豪提醒快乐也要限量。', '这笔娱乐还算轻，钱包没有立刻黑脸。', '玩可以，豪豪给你一个小小的预算通行证。'])
+    if (amount <= 100) return pickComment(record, ['娱乐支出开始认真了，豪豪建议先看看本月余额。', '快乐到账，钱包扣款，豪豪两边都看见了。', '这笔娱乐不算小，豪豪建议别连续上头。'])
+    return pickComment(record, ['游戏娱乐破百，豪豪已经把理性消费四个字贴屏幕上了。', '这笔快乐有点贵，预算表正在申请冷静期。', '豪豪不反对快乐，但反对钱包被秒切后排。'])
+  }
+
+  if (category === '购物') {
+    if (amount <= 50) return pickComment(record, ['购物小额还行，豪豪先不审太狠。', '这笔购物比较克制，钱包暂时还能坐稳。', '买得不大，记得别让购物车继续膨胀。'])
+    if (amount <= 200) return pickComment(record, ['购物支出有点份量，豪豪建议问一句：真需要吗？', '这笔买完记得用，别让它变成抽屉库存。', '钱包被拿捏了一下，豪豪已经记录证据。'])
+    return pickComment(record, ['购物大额出现，豪豪建议你和预算进行一次严肃对话。', '这单很猛，钱包可能需要售后安慰。', '买得挺果断，豪豪希望这不是冲动消费的胜利。'])
+  }
+
+  if (category === '旅游') {
+    if (amount <= 200) return pickComment(record, ['旅行支出已记录，开心可以，预算也要带上。', '这笔旅游还算温和，豪豪祝你玩得明白。', '出去看看挺好，回来也记得看看账。'])
+    return pickComment(record, ['旅游支出不小，豪豪建议把快乐和预算一起打包。', '这趟体验感应该不错，钱包的参与感也很强。', '旅行可以治愈心情，但豪豪负责照看余额。'])
+  }
+
+  if (category === '人情往来') {
+    if (amount <= 100) return pickComment(record, ['人情往来已记，豪豪理解这笔社会性支出。', '这笔花得有人情味，预算也闻到了。', '关系要维护，账也要记清。'])
+    return pickComment(record, ['人情支出有点重，豪豪建议月底单独复盘。', '这笔不是乱花，但金额确实有存在感。', '面子照顾到了，钱包也需要被照顾一下。'])
+  }
+
+  if (amount <= 20) return pickComment(record, ['这笔很克制，豪豪今天允许你夸自己一句。', '小额支出稳稳落地，钱包没有受惊。', '这笔钱走得很安静，豪豪表示满意。'])
+  if (amount >= 300) return pickComment(record, ['这笔花得挺猛，豪豪已经把它圈出来了。', '单笔金额偏大，钱包刚才明显顿了一下。', '豪豪建议这笔进本月复盘重点名单。'])
+  if (amount >= 100) return pickComment(record, ['这笔有点份量，豪豪建议接下来两天收一收。', '钱包被轻轻拍了一下，不疼但记得。', '金额不算小，豪豪已经开始盯本月节奏。'])
+  return pickComment(record, ['记下来了，至少你没有让钱消失得不明不白。', '这笔普通消费已归档，豪豪继续盯账。', '账记清了，钱包少一点神秘失踪案。'])
 }
 
 function renderAuth(mode = 'login') {
@@ -218,6 +288,10 @@ function renderApp() {
           <section class="card hero view-section ${state.activeView === 'home' ? 'active-view' : ''}" data-view="home">
             <div class="hero-copy">
               <div class="eyebrow">本月概览</div>
+              <div class="hero-date">
+                <span>当前账期</span>
+                <strong>${monthLabel(state.month)}</strong>
+              </div>
               <h2>钱包还站得住吗？</h2>
               <p class="hero-text">${summary.usedRate >= 1 ? '预算已经花穿，豪豪建议今天先别和支付软件见面。' : '记账不是抠门，是给钱安排一个明白的去处。'}</p>
             </div>
