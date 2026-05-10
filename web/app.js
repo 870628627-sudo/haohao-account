@@ -30,8 +30,6 @@ const state = {
 }
 
 const app = document.querySelector('#app')
-let bearTapCount = 0
-let bearTapTimer = null
 
 function money(value) {
   return Number(value || 0).toFixed(2)
@@ -514,6 +512,10 @@ function renderApp() {
               <strong>更改密码</strong>
               <span>更新登录密码，保护账本隐私</span>
             </button>
+            <button class="account-menu-item" id="adminEntryBtn" type="button">
+              <strong>后台管理</strong>
+              <span>管理员入口，需要输入管理密码</span>
+            </button>
           </div>
         </div>
       ` : ''}
@@ -578,7 +580,7 @@ function renderApp() {
             <div class="section-title">
               <div>
                 <h3>管理员登录</h3>
-                <p class="muted">隐藏入口已触发，请输入管理员密码。</p>
+                <p class="muted">请输入管理员密码进入后台。</p>
               </div>
               <button class="btn secondary account-close" id="adminCloseBtn" type="button">关闭</button>
             </div>
@@ -647,18 +649,8 @@ async function openAdminEntry() {
 
 function bindAppEvents() {
   document.querySelector('#accountBtn').addEventListener('click', () => {
-    bearTapCount += 1
-    window.clearTimeout(bearTapTimer)
-    if (bearTapCount >= 5) {
-      bearTapCount = 0
-      openAdminEntry()
-      return
-    }
-    bearTapTimer = window.setTimeout(() => {
-      bearTapCount = 0
-      state.accountMenuOpen = true
-      renderApp()
-    }, 320)
+    state.accountMenuOpen = true
+    renderApp()
   })
 
   document.querySelector('#accountCloseBtn')?.addEventListener('click', () => {
@@ -679,6 +671,10 @@ function bindAppEvents() {
       state.accountPanel = button.dataset.accountPanel
       renderApp()
     })
+  })
+
+  document.querySelector('#adminEntryBtn')?.addEventListener('click', () => {
+    openAdminEntry()
   })
 
   document.querySelector('.account-sheet')?.addEventListener('click', (event) => {
