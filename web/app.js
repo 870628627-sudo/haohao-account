@@ -1279,7 +1279,7 @@ function pieChartData(ranking) {
   return top
 }
 
-function drawPieChart(ctx, items, cx, cy, radius) {
+function drawPieChart(ctx, items, cx, cy, radius, legendStartY = 864) {
   const colors = ['#f5b94c', '#5b351c', '#327451', '#a44b35', '#d98b58']
   const total = items.reduce((sum, item) => sum + item.amount, 0)
   let start = -Math.PI / 2
@@ -1309,7 +1309,7 @@ function drawPieChart(ctx, items, cx, cy, radius) {
   ctx.textAlign = 'left'
 
   items.forEach((item, index) => {
-    const y = 864 + index * 62
+    const y = legendStartY + index * 62
     const percent = Math.round(item.amount / total * 100)
     roundedRect(ctx, 454, y + 5, 26, 26, 8)
     ctx.fillStyle = colors[index % colors.length]
@@ -1365,6 +1365,10 @@ async function createShareImage() {
 
   const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [] }
   const shareMessage = pickShareMessage()
+  const isYearShare = state.period === 'year'
+  const structureTop = isYearShare ? 650 : 810
+  const pieCenterY = isYearShare ? 850 : 976
+  const legendStartY = isYearShare ? 738 : 864
   const canvas = document.createElement('canvas')
   canvas.width = 900
   canvas.height = 1280
@@ -1433,31 +1437,32 @@ async function createShareImage() {
   drawMetric(ctx, 336, 454, 228, '总支出', `¥${money(summary.expense)}`, '#a44b35')
   drawMetric(ctx, 586, 454, 228, '结余', `¥${money(summary.balance)}`, summary.balance >= 0 ? '#327451' : '#a44b35')
 
-  drawSoftPanel(ctx, 86, 616, 728, 118, 24)
-  ctx.fillStyle = '#987a58'
-  ctx.font = `800 22px ${canvasFontFamily}`
-  ctx.fillText('预算使用', 112, 654)
-  ctx.fillStyle = '#352417'
-  ctx.font = `900 30px ${canvasFontFamily}`
-  ctx.fillText(`${Math.round(summary.usedRate * 100)}%`, 682, 654)
-  roundedRect(ctx, 112, 684, 650, 20, 10)
-  ctx.fillStyle = '#f5eadc'
-  ctx.fill()
-  roundedRect(ctx, 112, 684, Math.min(650, Math.round(summary.usedRate * 650)), 20, 10)
-  ctx.fillStyle = '#5b351c'
-  ctx.fill()
+  if (!isYearShare) {
+    drawSoftPanel(ctx, 86, 616, 728, 118, 24)
+    ctx.fillStyle = '#987a58'
+    ctx.font = `800 22px ${canvasFontFamily}`
+    ctx.fillText('预算使用', 112, 654)
+    ctx.fillStyle = '#352417'
+    ctx.font = `900 30px ${canvasFontFamily}`
+    ctx.fillText(`${Math.round(summary.usedRate * 100)}%`, 682, 654)
+    roundedRect(ctx, 112, 684, 650, 20, 10)
+    ctx.fillStyle = '#f5eadc'
+    ctx.fill()
+    roundedRect(ctx, 112, 684, Math.min(650, Math.round(summary.usedRate * 650)), 20, 10)
+    ctx.fillStyle = '#5b351c'
+    ctx.fill()
+  }
 
   ctx.fillStyle = '#5b351c'
   ctx.font = `900 32px ${canvasFontFamily}`
-  ctx.fillText('支出结构', 86, 810)
-  drawSoftPanel(ctx, 86, 840, 728, 320, 28)
+  ctx.fillText('支出结构', 86, structureTop)
   const pieItems = pieChartData(summary.ranking)
   if (pieItems.length) {
-    drawPieChart(ctx, pieItems, 246, 976, 128)
+    drawPieChart(ctx, pieItems, 246, pieCenterY, 128, legendStartY)
   } else {
     ctx.fillStyle = '#987a58'
     ctx.font = `700 26px ${canvasFontFamily}`
-    drawText(ctx, '暂无支出结构，豪豪暂时还切不出扇形图。', 86, 864, 700, 36, 2)
+    drawText(ctx, '暂无支出结构，豪豪暂时还切不出扇形图。', 86, structureTop + 54, 700, 36, 2)
   }
 
   return canvas.toDataURL('image/png')
