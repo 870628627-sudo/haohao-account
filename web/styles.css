@@ -210,6 +210,7 @@ button {
 }
 
 .mini-card {
+  min-width: 0;
   padding: 14px;
   border-radius: 18px;
   background: rgba(255, 254, 253, 0.82);
@@ -220,6 +221,88 @@ button {
   display: block;
   margin-top: 6px;
   font-size: 22px;
+  overflow-wrap: anywhere;
+}
+
+.hero-budget {
+  position: relative;
+  z-index: 1;
+  max-width: 580px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(241, 226, 204, 0.9);
+  border-radius: 18px;
+  background: rgba(255, 254, 253, 0.84);
+}
+
+.hero-budget-head,
+.hero-budget-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hero-budget-head span,
+.hero-budget-meta {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.hero-budget-head strong {
+  font-size: 20px;
+}
+
+.hero-budget-meta {
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+
+.budget-progress,
+.budget-chip-progress {
+  overflow: hidden;
+  width: 100%;
+  border-radius: 999px;
+  background: #f1e2cc;
+}
+
+.budget-progress {
+  height: 12px;
+  margin-top: 10px;
+}
+
+.budget-chip-progress {
+  height: 9px;
+}
+
+.budget-progress span,
+.budget-chip-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.budget-safe .budget-progress span,
+.budget-safe.budget-progress span,
+.budget-safe .budget-chip-progress span,
+.budget-safe.budget-chip-progress span {
+  background: var(--good);
+}
+
+.budget-warn .budget-progress span,
+.budget-warn.budget-progress span,
+.budget-warn .budget-chip-progress span,
+.budget-warn.budget-chip-progress span {
+  background: var(--brand-2);
+}
+
+.budget-danger .budget-progress span,
+.budget-danger.budget-progress span,
+.budget-danger .budget-chip-progress span,
+.budget-danger.budget-chip-progress span {
+  background: var(--bad);
 }
 
 .actions {
@@ -612,7 +695,17 @@ button {
 }
 
 .profile-tool-tabs strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 15px;
+}
+
+.profile-tool-tabs em {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 13px;
 }
 
 .profile-tool-tabs span,
@@ -1244,12 +1337,12 @@ button {
     font-size: 14px;
   }
 
-  .hero-stats,
   .grid-2 {
     grid-template-columns: 1fr;
   }
 
   .hero-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin-top: auto;
   }
@@ -1260,7 +1353,13 @@ button {
   }
 
   .mini-card strong {
-    font-size: 19px;
+    font-size: 17px;
+  }
+
+  .hero-budget {
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 16px;
   }
 
   .section-title {

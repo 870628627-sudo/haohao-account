@@ -36,6 +36,26 @@ function money(value) {
   return Number(value || 0).toFixed(2)
 }
 
+function budgetPercent(summary) {
+  return Math.max(0, Math.round(Number(summary.usedRate || 0) * 100))
+}
+
+function budgetBarWidth(summary) {
+  return Math.min(100, budgetPercent(summary))
+}
+
+function budgetTone(summary) {
+  const rate = Number(summary.usedRate || 0)
+  if (rate >= 0.9) return 'danger'
+  if (rate >= 0.5) return 'warn'
+  return 'safe'
+}
+
+function budgetStatusText(summary) {
+  if (!Number(summary.budget || 0)) return '本月还没设置预算'
+  return `预算 ¥${money(summary.budget)} · 剩余 ¥${money(summary.budgetLeft)}`
+}
+
 function monthLabel(month) {
   const [year, monthNumber] = String(month || '').split('-')
   if (!year || !monthNumber) return '当前月份'
@@ -124,8 +144,8 @@ function renderProfileSection(summary) {
     <section class="card view-section profile-panel ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
       <div class="profile-tool-tabs">
         <button class="${isBudget ? 'active' : ''}" data-profile-tool="budget" type="button">
-          <strong>月度预算</strong>
-          <span>¥${money(summary.budget)} · 剩余 ¥${money(summary.budgetLeft)}</span>
+          <strong>月度预算 <em>${budgetPercent(summary)}%</em></strong>
+          <div class="budget-chip-progress budget-${budgetTone(summary)}"><span style="width:${budgetBarWidth(summary)}%"></span></div>
         </button>
         <button class="${isFixed ? 'active' : ''}" data-profile-tool="fixed" type="button">
           <strong>固定支出项目</strong>
@@ -135,8 +155,8 @@ function renderProfileSection(summary) {
       ${isBudget ? `
         <div class="profile-tool-body">
           <div class="section-title compact-title"><h3>月度预算</h3><strong>${Math.round(summary.usedRate * 100)}%</strong></div>
-          <div class="bar"><span style="width:${Math.min(100, Math.round(summary.usedRate * 100))}%"></span></div>
-          <p class="muted">预算 ¥${money(summary.budget)}，剩余 ¥${money(summary.budgetLeft)}</p>
+          <div class="bar budget-progress budget-${budgetTone(summary)}"><span style="width:${budgetBarWidth(summary)}%"></span></div>
+          <p class="muted">${budgetStatusText(summary)}</p>
           <form class="form budget-form" id="budgetForm">
             <input class="input" name="total" type="number" min="0" step="0.01" placeholder="设置本月总预算" value="${summary.budget || ''}" />
             <button class="btn secondary" type="submit">保存预算</button>
@@ -434,6 +454,17 @@ function renderApp() {
               <div class="mini-card"><span class="muted">收入</span><strong class="income">¥${money(summary.income)}</strong></div>
               <div class="mini-card"><span class="muted">支出</span><strong class="expense">¥${money(summary.expense)}</strong></div>
               <div class="mini-card"><span class="muted">结余</span><strong>¥${money(summary.balance)}</strong></div>
+            </div>
+            <div class="hero-budget budget-${budgetTone(summary)}">
+              <div class="hero-budget-head">
+                <span>预算使用情况</span>
+                <strong>${budgetPercent(summary)}%</strong>
+              </div>
+              <div class="budget-progress"><span style="width:${budgetBarWidth(summary)}%"></span></div>
+              <div class="hero-budget-meta">
+                <span>${budgetStatusText(summary)}</span>
+                <span>支出 ¥${money(summary.expense)}</span>
+              </div>
             </div>
           </section>
 
