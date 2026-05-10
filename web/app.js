@@ -468,7 +468,7 @@ function renderApp() {
           <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
             <div class="section-title"><h3>固定支出</h3></div>
             <form class="form" id="fixedForm">
-              <input class="input" name="name" placeholder="项目名，例如电费" required />
+              <input class="input" name="name" placeholder="项目名，可不填，默认用分类名" />
               <div class="grid-2">
                 <input class="input" name="defaultAmount" type="number" min="0.01" step="0.01" placeholder="金额" required />
                 <select class="select" name="category">${fixedCategories.map((item) => `<option>${item}</option>`).join('')}</select>
@@ -611,7 +611,8 @@ function renderApp() {
                 <div class="admin-user">
                   <div>
                     <strong>${escapeAttr(user.nickname)}</strong>
-                    <small>${escapeAttr(user.email)} · ${formatDateTime(user.createdAt)}</small>
+                    <small>${escapeAttr(user.email)}</small>
+                    <small>最近操作：${formatDateTime(user.lastActivityAt || user.createdAt)}</small>
                   </div>
                   <div>
                     <span>${user.billCount || 0} 笔</span>
@@ -903,15 +904,17 @@ function bindAppEvents() {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const payload = Object.fromEntries(form.entries())
-    if (!String(payload.name || '').trim() || Number(payload.defaultAmount) <= 0) {
-      toast('请填写固定项目名称和金额。')
+    payload.name = String(payload.name || '').trim() || String(payload.category || '').trim()
+    if (Number(payload.defaultAmount) <= 0) {
+      toast('请填写固定项目金额。')
       return
     }
     try {
       await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
       event.currentTarget.reset()
-      toast('固定支出项目已保存。')
+      state.activeView = 'profile'
       await loadDashboard()
+      toast('固定支出项目已保存。')
     } catch (error) {
       toast(error.message)
     }

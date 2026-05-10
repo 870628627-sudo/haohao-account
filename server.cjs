@@ -415,11 +415,17 @@ async function handleApi(req, res) {
         users.email,
         users.nickname,
         users.created_at,
-        COUNT(bills.id) AS bill_count
+        COUNT(bills.id) AS bill_count,
+        MAX(
+          users.created_at,
+          COALESCE((SELECT MAX(updated_at) FROM bills WHERE user_id = users.id), users.created_at),
+          COALESCE((SELECT MAX(updated_at) FROM budgets WHERE user_id = users.id), users.created_at),
+          COALESCE((SELECT MAX(updated_at) FROM fixed_items WHERE user_id = users.id), users.created_at)
+        ) AS last_activity_at
       FROM users
       LEFT JOIN bills ON bills.user_id = users.id
       GROUP BY users.id
-      ORDER BY users.created_at DESC
+      ORDER BY last_activity_at DESC
       LIMIT 50
     `).all()
     const totals = {
@@ -428,7 +434,8 @@ async function handleApi(req, res) {
     }
     json(res, 200, { totals, users: users.map(cleanUser).map((user, index) => ({
       ...user,
-      billCount: users[index].bill_count
+      billCount: users[index].bill_count,
+      lastActivityAt: users[index].last_activity_at
     })) })
     return
   }
@@ -625,12 +632,13 @@ async function handleApi(req, res) {
 
   if (req.method === 'POST' && url.pathname === '/api/fixed-items') {
     const body = await readBody(req)
+    const category = String(body.category || '其他').trim() || '其他'
     const item = {
       id: randomId(),
       userId: user.id,
       bookId: 'personal',
-      name: String(body.name || '').trim(),
-      category: String(body.category || '其他').trim() || '其他',
+      name: String(body.name || '').trim() || category,
+      category,
       defaultAmount: toMoneyNumber(body.defaultAmount),
       note: String(body.note || '').trim(),
       enabled: true,
@@ -638,8 +646,8 @@ async function handleApi(req, res) {
       updatedAt: nowIso()
     }
 
-    if (!item.name || item.defaultAmount <= 0) {
-      json(res, 400, { error: '请填写项目名和金额' })
+    if (item.defaultAmount <= 0) {
+      json(res, 400, { error: '请填写金额' })
       return
     }
 
