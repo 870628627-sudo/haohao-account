@@ -693,13 +693,18 @@ function serveStatic(req, res) {
     '.html': 'text/html; charset=utf-8',
     '.css': 'text/css; charset=utf-8',
     '.js': 'application/javascript; charset=utf-8',
+    '.webmanifest': 'application/manifest+json; charset=utf-8',
     '.jpg': 'image/jpeg',
     '.png': 'image/png',
     '.svg': 'image/svg+xml'
   }
+  const cacheControl = ['.html', '.css', '.js', '.webmanifest'].includes(ext)
+    ? 'no-cache'
+    : 'public, max-age=86400'
 
   res.writeHead(200, {
-    'Content-Type': types[ext] || 'application/octet-stream'
+    'Content-Type': types[ext] || 'application/octet-stream',
+    'Cache-Control': cacheControl
   })
   fs.createReadStream(filePath).pipe(res)
 }

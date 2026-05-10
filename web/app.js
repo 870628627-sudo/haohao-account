@@ -910,10 +910,12 @@ function bindAppEvents() {
       return
     }
     try {
-      await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
+      const data = await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
       event.currentTarget.reset()
       state.activeView = 'profile'
-      await loadDashboard()
+      state.fixedItems = [data.item, ...state.fixedItems.filter((item) => item.id !== data.item.id)]
+      renderApp()
+      loadDashboard().catch(() => {})
       toast('固定支出项目已保存。')
     } catch (error) {
       toast(error.message)
