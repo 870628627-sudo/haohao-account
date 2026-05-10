@@ -1462,6 +1462,10 @@ function pieChartData(ranking) {
 function drawPieChart(ctx, items, cx, cy, radius, legendStartY = 864) {
   const colors = ['#f5b94c', '#5b351c', '#327451', '#a44b35', '#d98b58', '#6d8f5b', '#e7a7a1', '#7b6fb0', '#d2a24c', '#4f8f8c', '#bc6c45', '#8f6d4e']
   const total = items.reduce((sum, item) => sum + item.amount, 0)
+  const legendColumns = 2
+  const legendColumnWidth = 184
+  const legendRowGap = 66
+  const legendX = 454
   let start = -Math.PI / 2
   items.forEach((item, index) => {
     const angle = (item.amount / total) * Math.PI * 2
@@ -1489,17 +1493,20 @@ function drawPieChart(ctx, items, cx, cy, radius, legendStartY = 864) {
   ctx.textAlign = 'left'
 
   items.forEach((item, index) => {
-    const y = legendStartY + index * 62
+    const column = index % legendColumns
+    const row = Math.floor(index / legendColumns)
+    const x = legendX + column * legendColumnWidth
+    const y = legendStartY + row * legendRowGap
     const percent = Math.round(item.amount / total * 100)
-    roundedRect(ctx, 454, y + 5, 26, 26, 8)
+    roundedRect(ctx, x, y + 5, 24, 24, 8)
     ctx.fillStyle = colors[index % colors.length]
     ctx.fill()
     ctx.fillStyle = '#352417'
-    ctx.font = `900 23px ${canvasFontFamily}`
-    ctx.fillText(item.category, 494, y + 28)
+    ctx.font = `900 21px ${canvasFontFamily}`
+    drawText(ctx, item.category, x + 34, y + 25, 132, 24, 1)
     ctx.fillStyle = '#987a58'
-    ctx.font = `800 20px ${canvasFontFamily}`
-    ctx.fillText(`${percent}% · ¥${money(item.amount)}`, 494, y + 56)
+    ctx.font = `800 18px ${canvasFontFamily}`
+    ctx.fillText(`${percent}% · ¥${money(item.amount)}`, x + 34, y + 52)
   })
 }
 
@@ -1550,9 +1557,10 @@ async function createShareImage() {
   const pieCenterY = isYearShare ? 850 : 976
   const legendStartY = isYearShare ? 738 : 864
   const pieItems = pieChartData(summary.ranking)
+  const legendRows = Math.ceil(pieItems.length / 2)
   const canvas = document.createElement('canvas')
   canvas.width = 900
-  canvas.height = Math.max(1280, pieItems.length ? legendStartY + pieItems.length * 62 + 110 : 1280)
+  canvas.height = Math.max(1280, pieItems.length ? legendStartY + legendRows * 66 + 110 : 1280)
   const ctx = canvas.getContext('2d')
 
   ctx.fillStyle = '#fffaf4'
