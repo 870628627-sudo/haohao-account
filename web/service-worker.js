@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v20'
-const APP_VERSION = '20260510-profile-ui'
+const CACHE_NAME = 'haohudget-v21'
+const APP_VERSION = '20260510-fixed-confirm'
 const ASSETS = [
   '/',
   '/index.html',

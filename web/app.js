@@ -92,6 +92,12 @@ function avatarSrc() {
   return state.user?.avatarData || bearSrc
 }
 
+async function syncFixedItems() {
+  const fixedItems = await api('/api/fixed-items')
+  state.fixedItems = fixedItems.items || []
+  return state.fixedItems
+}
+
 function renderFixedItemList() {
   return `
     <div class="list fixed-list">
@@ -404,6 +410,7 @@ function renderApp() {
           <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
             <img src="${escapeAttr(avatarSrc())}" alt="账户头像" />
           </button>
+          <strong class="brand-username">${escapeAttr(state.user.nickname)}</strong>
         </div>
         <div class="userbar">
           <span>${state.user.nickname} · ${state.user.email}</span>
@@ -1004,15 +1011,41 @@ function bindAppEvents() {
       toast('请填写固定项目金额。')
       return
     }
+    const previousIds = new Set(state.fixedItems.map((item) => item.id))
+    const optimisticItem = {
+      id: `pending-${Date.now()}`,
+      name: payload.name,
+      category: payload.category,
+      defaultAmount: Number(payload.defaultAmount),
+      note: String(payload.note || ''),
+      enabled: true
+    }
     try {
       const data = await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
       event.currentTarget.reset()
       state.activeView = 'profile'
-      state.fixedItems = [data.item, ...state.fixedItems.filter((item) => item.id !== data.item.id)]
+      const savedItem = data.item || optimisticItem
+      state.fixedItems = [savedItem, ...state.fixedItems.filter((item) => item.id !== savedItem.id)]
       renderApp()
-      loadDashboard().catch(() => {})
+      syncFixedItems().then(() => renderApp()).catch((syncError) => {
+        console.error('fixed item sync after save failed', syncError)
+      })
       toast('固定支出项目已保存。')
     } catch (error) {
+      console.error('fixed item save failed', error)
+      try {
+        const items = await syncFixedItems()
+        const hasNewItem = items.some((item) => !previousIds.has(item.id))
+        if (hasNewItem) {
+          event.currentTarget.reset()
+          renderApp()
+          toast('固定支出项目已保存。')
+          return
+        }
+        renderApp()
+      } catch (refreshError) {
+        console.error('fixed item refresh after failed save failed', refreshError)
+      }
       toast(error.message)
     }
   })
@@ -1310,14 +1343,13 @@ async function createShareImage() {
 }
 
 async function loadDashboard() {
-  const [summary, bills, fixedItems] = await Promise.all([
+  const [summary, bills] = await Promise.all([
     api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`),
-    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`),
-    api('/api/fixed-items')
+    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`)
   ])
+  await syncFixedItems()
   state.summary = summary
   state.bills = bills.bills
-  state.fixedItems = fixedItems.items
   renderApp()
 }
 

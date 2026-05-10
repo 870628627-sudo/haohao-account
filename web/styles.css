@@ -86,6 +86,17 @@ button {
   line-height: 1.1;
 }
 
+.brand-username {
+  max-width: 160px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .brand-nickname {
   color: var(--muted);
   font-size: 14px;
@@ -1167,6 +1178,11 @@ button {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 13px;
+  }
+
+  .brand-username {
+    max-width: 112px;
+    font-size: 16px;
   }
 
   .brand p,
