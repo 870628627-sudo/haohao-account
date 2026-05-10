@@ -1363,7 +1363,7 @@ button {
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
-    background: linear-gradient(180deg, #fff0c8 0%, #fff4dc 62%, #fffaf4 100%);
+    background: linear-gradient(180deg, #fffaf4 0 76px, #fff0c8 76px, #fff4dc 62%, #fffaf4 100%);
     padding-bottom: 78px;
   }
 
