@@ -556,6 +556,18 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'DELETE' && url.pathname.startsWith('/api/fixed-items/')) {
+    const id = decodeURIComponent(url.pathname.split('/').pop())
+    const result = db.prepare('UPDATE fixed_items SET enabled = 0, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(nowIso(), id, user.id)
+    if (result.changes === 0) {
+      json(res, 404, { error: '固定支出项目不存在' })
+      return
+    }
+    json(res, 200, { ok: true })
+    return
+  }
+
   text(res, 404, 'Not found')
 }
 

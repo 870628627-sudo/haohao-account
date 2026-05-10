@@ -53,9 +53,24 @@ function selectedYear() {
   return state.month.slice(0, 4)
 }
 
+function yearOptions() {
+  const currentYear = new Date().getFullYear()
+  const chosenYear = Number(selectedYear())
+  const years = new Set()
+  for (let year = currentYear - 5; year <= currentYear + 2; year += 1) {
+    years.add(year)
+  }
+  if (Number.isFinite(chosenYear)) years.add(chosenYear)
+  return [...years].sort((a, b) => b - a)
+}
+
 function periodDateInput(id) {
   if (state.period === 'year') {
-    return `<input class="input date-compact year-compact" id="${id}" type="number" min="2000" max="2100" step="1" value="${selectedYear()}" inputmode="numeric" />`
+    return `
+      <select class="select date-compact year-compact" id="${id}" aria-label="选择年份">
+        ${yearOptions().map((year) => `<option value="${year}" ${String(year) === selectedYear() ? 'selected' : ''}>${year}年</option>`).join('')}
+      </select>
+    `
   }
 
   return `<input class="input date-compact" id="${id}" type="month" value="${state.month}" />`
@@ -336,7 +351,10 @@ function renderApp() {
                   <div><strong>${item.name}</strong><small>${item.category}</small></div>
                   <div class="amount">
                     <strong>¥${money(item.defaultAmount)}</strong>
-                    <br /><button class="btn secondary" data-record-fixed="${item.id}" style="min-height: 30px; padding: 0 10px; border-radius: 10px; margin-top: 6px;">记本月</button>
+                    <div class="bill-actions">
+                      <button class="btn secondary" data-record-fixed="${item.id}" type="button">记本月</button>
+                      <button class="btn danger" data-delete-fixed="${item.id}" type="button">删除</button>
+                    </div>
                   </div>
                 </div>
               `).join('') : '<p class="muted">还没有固定支出项目。</p>'}
@@ -483,6 +501,22 @@ function bindAppEvents() {
         judge(bearComment(data.bill))
         state.month = data.bill.month
         state.activeView = 'bills'
+        await loadDashboard()
+      } catch (error) {
+        toast(error.message)
+      }
+    })
+  })
+
+  document.querySelectorAll('[data-delete-fixed]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const item = state.fixedItems.find((target) => target.id === button.dataset.deleteFixed)
+      if (!item) return
+      if (!window.confirm(`删除固定支出「${item.name}」？`)) return
+
+      try {
+        await api(`/api/fixed-items/${encodeURIComponent(item.id)}`, { method: 'DELETE' })
+        toast('固定支出项目已删除。')
         await loadDashboard()
       } catch (error) {
         toast(error.message)

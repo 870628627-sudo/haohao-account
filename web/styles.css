@@ -349,6 +349,21 @@ button {
   font-weight: 900;
 }
 
+.bill-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bill-actions .btn {
+  min-height: 32px;
+  border-radius: 11px;
+  padding: 0 11px;
+  font-size: 13px;
+  box-shadow: none;
+}
+
 .income {
   color: var(--good);
 }
@@ -397,13 +412,13 @@ button {
 }
 
 .date-compact {
-  width: 142px;
+  width: 172px;
   max-width: 100%;
   height: 40px;
   line-height: 40px;
-  border-radius: 999px;
-  padding: 0 12px;
-  font-size: 14px;
+  border-radius: 16px;
+  padding: 0 14px;
+  font-size: 15px;
   font-weight: 800;
   color: #6d5034;
   text-align: center;
@@ -419,7 +434,8 @@ button {
 }
 
 .year-compact {
-  width: 104px;
+  width: 132px;
+  text-align-last: center;
 }
 
 .period-tabs button {
@@ -829,8 +845,11 @@ button {
   }
 
   .section-title .date-compact {
-    width: 148px;
-    max-width: 148px !important;
+    width: 100%;
+    max-width: none !important;
+    height: 46px;
+    line-height: 46px;
+    font-size: 16px;
   }
 
   .bill-title {
@@ -934,11 +953,14 @@ button {
   }
 
   .compact-date-row {
-    max-width: 150px;
+    max-width: none;
   }
 
   .compact-date-row .date-compact {
-    width: 150px;
+    width: 100%;
+    height: 46px;
+    line-height: 46px;
+    font-size: 16px;
   }
 
   .period-tabs button {
@@ -960,6 +982,15 @@ button {
   .stat-tile strong {
     font-size: 21px;
   }
+
+  .bill-actions {
+    width: 100%;
+  }
+
+  .bill-actions .btn {
+    flex: 1;
+    min-height: 36px;
+  }
 }
 
 @media (max-width: 620px) {
@@ -973,11 +1004,6 @@ button {
 
   .bill-title {
     grid-template-columns: 1fr;
-  }
-
-  .section-title .date-compact {
-    width: 132px;
-    max-width: 132px !important;
   }
 
   .amount-save-row {
