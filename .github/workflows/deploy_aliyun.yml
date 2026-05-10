@@ -34,5 +34,10 @@ jobs:
             if [ ! -d "$APP_DIR/.git" ]; then
               mkdir -p "$(dirname "$APP_DIR")"
               git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
+            else
+              cd "$APP_DIR"
+              git fetch origin "$BRANCH"
+              git checkout "$BRANCH"
+              git pull --ff-only origin "$BRANCH"
             fi
             bash "$APP_DIR/scripts/deploy_aliyun.sh"
