@@ -539,7 +539,9 @@ function renderApp() {
               <h2>${heroMessage.title}</h2>
               <p class="hero-text">${heroMessage.text}</p>
             </div>
-            <img class="hero-bear" src="${bearSrc}" alt="豪豪小熊" />
+            <button class="hero-bear-button" type="button" data-view-jump="add" aria-label="去记账">
+              <img class="hero-bear" src="${bearSrc}" alt="豪豪小熊" />
+            </button>
             <div class="hero-stats">
               <div class="mini-card"><span class="muted">收入</span><strong class="income">¥${money(summary.income)}</strong></div>
               <div class="mini-card"><span class="muted">支出</span><strong class="expense">¥${money(summary.expense)}</strong></div>
@@ -1059,6 +1061,14 @@ function bindAppEvents() {
     button.addEventListener('click', () => {
       captureBillDraft()
       state.activeView = button.dataset.viewTab
+      renderApp()
+    })
+  })
+
+  document.querySelectorAll('[data-view-jump]').forEach((button) => {
+    button.addEventListener('click', () => {
+      captureBillDraft()
+      state.activeView = button.dataset.viewJump
       renderApp()
     })
   })
