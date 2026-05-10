@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v24'
-const APP_VERSION = '20260510-budget-layout'
+const CACHE_NAME = 'haohudget-v25'
+const APP_VERSION = '20260510-share-pie'
 const ASSETS = [
   '/',
   '/index.html',

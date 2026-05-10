@@ -92,6 +92,33 @@ const heroMessages = [
   { title: '豪豪给你盘一盘', text: '数字不骗人，但豪豪会负责把话说得好听一点。' }
 ]
 
+const shareMessages = [
+  { title: '钱包体检报告', text: '豪豪把本期账单翻了一遍，重点已经圈好。' },
+  { title: '本期花钱地图', text: '钱都去了哪里，豪豪已经用图给你摊开。' },
+  { title: '账单小结出炉', text: '收入、支出和预算都在这里，月底复盘不再靠感觉。' },
+  { title: '钱包状态播报', text: '这份账单不吓人，只负责把生活花销讲清楚。' },
+  { title: '消费结构观察', text: '豪豪把支出切成了几块，哪块最抢眼一眼就知道。' },
+  { title: '本期账面快照', text: '每一笔都算数，合起来就是这段时间的生活轮廓。' },
+  { title: '预算巡逻完成', text: '豪豪看过预算线了，接下来花钱可以更有底。' },
+  { title: '账本今日营业', text: '数字排好队，钱包有没有压力就看这一张。' },
+  { title: '支出结构复盘', text: '不是审判生活，是帮你看清钱花在哪些地方。' },
+  { title: '钱包晴雨表', text: '余额、支出和预算一起看，心里会更稳一点。' },
+  { title: '本期消费切片', text: '豪豪把账单切成扇形，最大那块已经藏不住了。' },
+  { title: '账单温柔版', text: '花出去的钱都有名字，复盘起来就少一点迷糊。' },
+  { title: '豪豪记账简报', text: '这期账单已经整理好，适合保存，也适合提醒自己。' },
+  { title: '钱包复盘卡', text: '看清支出结构，比单纯心疼余额更有用。' },
+  { title: '本期账单拼图', text: '每类支出都是一块拼图，拼起来就是消费习惯。' },
+  { title: '预算线观察员', text: '豪豪已经盯过预算进度，剩下的交给下一次选择。' },
+  { title: '生活花销记录', text: '钱不是凭空消失的，它只是变成了这一张图。' },
+  { title: '消费雷达打开', text: '哪类支出最活跃，豪豪已经帮你标出来了。' },
+  { title: '账单复盘时刻', text: '本期花销已经归位，下一期可以更从容。' },
+  { title: '钱包小结卡', text: '把账记清楚，是给未来的自己留一盏灯。' }
+]
+
+function pickShareMessage() {
+  return shareMessages[Math.floor(Math.random() * shareMessages.length)]
+}
+
 function refreshHeroMessage() {
   state.heroMessageIndex = Math.floor(Math.random() * heroMessages.length)
 }
@@ -926,7 +953,8 @@ function bindAppEvents() {
     if (!state.shareImageUrl) return
     try {
       const file = await shareImageFile()
-      const payload = { title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。` }
+      const message = pickShareMessage()
+      const payload = { title: '豪豪记账', text: `${summaryLabel()}，${message.text}` }
       if (navigator.canShare?.({ files: [file] })) {
         payload.files = [file]
       }
@@ -1159,7 +1187,8 @@ async function saveShareImage() {
   try {
     const file = await shareImageFile()
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。`, files: [file] })
+      const message = pickShareMessage()
+      await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，${message.text}`, files: [file] })
       return
     }
 
@@ -1218,11 +1247,16 @@ function roundedRect(ctx, x, y, width, height, radius) {
 
 function drawText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
   const chars = String(text).split('')
+  const noLineStart = '，。！？；：、,.!?;:)]）】》'
   let line = ''
   let lines = 0
   for (const char of chars) {
     const next = line + char
     if (ctx.measureText(next).width > maxWidth && line) {
+      if (noLineStart.includes(char)) {
+        line = next
+        continue
+      }
       ctx.fillText(line, x, y)
       y += lineHeight
       lines += 1
@@ -1233,6 +1267,60 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
     }
   }
   if (line && lines < maxLines) ctx.fillText(line, x, y)
+}
+
+function pieChartData(ranking) {
+  const items = (ranking || []).filter((item) => Number(item.amount) > 0)
+  const top = items.slice(0, 4).map((item) => ({ category: item.category, amount: Number(item.amount) }))
+  const otherAmount = items.slice(4).reduce((total, item) => total + Number(item.amount || 0), 0)
+  if (otherAmount > 0) {
+    top.push({ category: '其他', amount: otherAmount })
+  }
+  return top
+}
+
+function drawPieChart(ctx, items, cx, cy, radius) {
+  const colors = ['#f5b94c', '#5b351c', '#327451', '#a44b35', '#d98b58']
+  const total = items.reduce((sum, item) => sum + item.amount, 0)
+  let start = -Math.PI / 2
+  items.forEach((item, index) => {
+    const angle = (item.amount / total) * Math.PI * 2
+    ctx.beginPath()
+    ctx.moveTo(cx, cy)
+    ctx.arc(cx, cy, radius, start, start + angle)
+    ctx.closePath()
+    ctx.fillStyle = colors[index % colors.length]
+    ctx.fill()
+    start += angle
+  })
+
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius * 0.48, 0, Math.PI * 2)
+  ctx.fillStyle = '#fffefd'
+  ctx.fill()
+
+  ctx.fillStyle = '#5b351c'
+  ctx.font = `900 28px ${canvasFontFamily}`
+  ctx.textAlign = 'center'
+  ctx.fillText('支出', cx, cy - 4)
+  ctx.fillStyle = '#987a58'
+  ctx.font = `800 20px ${canvasFontFamily}`
+  ctx.fillText('结构', cx, cy + 26)
+  ctx.textAlign = 'left'
+
+  items.forEach((item, index) => {
+    const y = 864 + index * 62
+    const percent = Math.round(item.amount / total * 100)
+    roundedRect(ctx, 454, y + 5, 26, 26, 8)
+    ctx.fillStyle = colors[index % colors.length]
+    ctx.fill()
+    ctx.fillStyle = '#352417'
+    ctx.font = `900 23px ${canvasFontFamily}`
+    ctx.fillText(item.category, 494, y + 28)
+    ctx.fillStyle = '#987a58'
+    ctx.font = `800 20px ${canvasFontFamily}`
+    ctx.fillText(`${percent}% · ¥${money(item.amount)}`, 494, y + 56)
+  })
 }
 
 function drawPill(ctx, x, y, text, fill, color) {
@@ -1267,11 +1355,11 @@ async function createShareImage() {
   }
 
   const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [] }
+  const shareMessage = pickShareMessage()
   const canvas = document.createElement('canvas')
   canvas.width = 900
   canvas.height = 1280
   const ctx = canvas.getContext('2d')
-  const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
 
   ctx.fillStyle = '#fffaf4'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -1317,15 +1405,15 @@ async function createShareImage() {
   ctx.fillText('豪豪记账', 214, 130)
   ctx.fillStyle = '#987a58'
   ctx.font = `700 24px ${canvasFontFamily}`
-  ctx.fillText(`${summaryLabel()} · 钱花得明明白白`, 214, 170)
+  ctx.fillText(`${summaryLabel()} · ${shareMessage.title}`, 214, 170)
 
   drawPill(ctx, 86, 232, '本期概览', '#fff0c8', '#5b351c')
   ctx.fillStyle = '#352417'
   ctx.font = `900 56px ${canvasFontFamily}`
-  ctx.fillText(summary.balance >= 0 ? '钱包暂时站稳了' : '钱包需要扶一把', 86, 326)
+  ctx.fillText(shareMessage.title, 86, 326)
   ctx.fillStyle = '#6d5034'
   ctx.font = `700 26px ${canvasFontFamily}`
-  drawText(ctx, summary.balance >= 0 ? '豪豪已经把收入、支出和结余排好了队，月底少一点糊涂账。' : '本期结余为负，豪豪建议下次消费前先看一眼账单。', 86, 374, 700, 36, 2)
+  drawText(ctx, shareMessage.text, 86, 374, 700, 36, 2)
 
   drawMetric(ctx, 86, 454, 228, '总收入', `¥${money(summary.income)}`, '#327451')
   drawMetric(ctx, 336, 454, 228, '总支出', `¥${money(summary.expense)}`, '#a44b35')
@@ -1351,28 +1439,14 @@ async function createShareImage() {
 
   ctx.fillStyle = '#5b351c'
   ctx.font = `900 32px ${canvasFontFamily}`
-  ctx.fillText('支出排行', 86, 810)
-  const ranking = summary.ranking.slice(0, 5)
-  if (ranking.length) {
-    ranking.forEach((item, index) => {
-      const y = 850 + index * 72
-      ctx.fillStyle = '#6d5034'
-      ctx.font = `800 24px ${canvasFontFamily}`
-      ctx.fillText(item.category, 86, y + 28)
-      roundedRect(ctx, 236, y + 10, 360, 18, 9)
-      ctx.fillStyle = '#f5eadc'
-      ctx.fill()
-      roundedRect(ctx, 236, y + 10, Math.max(22, Math.round(item.amount / maxRank * 360)), 18, 9)
-      ctx.fillStyle = index === 0 ? '#f5b94c' : '#5b351c'
-      ctx.fill()
-      ctx.fillStyle = '#352417'
-      ctx.font = `900 24px ${canvasFontFamily}`
-      ctx.fillText(`¥${money(item.amount)}`, 632, y + 28)
-    })
+  ctx.fillText('支出结构', 86, 810)
+  const pieItems = pieChartData(summary.ranking)
+  if (pieItems.length) {
+    drawPieChart(ctx, pieItems, 246, 976, 128)
   } else {
     ctx.fillStyle = '#987a58'
     ctx.font = `700 26px ${canvasFontFamily}`
-    ctx.fillText('暂无支出排行，豪豪暂时无瓜可吃。', 86, 864)
+    drawText(ctx, '暂无支出结构，豪豪暂时还切不出扇形图。', 86, 864, 700, 36, 2)
   }
 
   return canvas.toDataURL('image/png')
