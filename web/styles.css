@@ -2041,10 +2041,6 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .travel-date-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .travel-workspace {
     gap: 12px;
   }
