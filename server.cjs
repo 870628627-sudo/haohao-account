@@ -15,6 +15,10 @@ const ADMIN_COOKIE_NAME = 'haohudget_admin'
 const ADMIN_PASSWORD = '030825'
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
 const BEIJING_TIME_ZONE = 'Asia/Shanghai'
+const DEFAULT_BOOKS = [
+  { id: 'personal', name: '日常账本', icon: '🏠', sortOrder: 0 },
+  { id: 'travel', name: '旅行账本', icon: '🧳', sortOrder: 1 }
+]
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -43,6 +47,19 @@ function initDb() {
       user_id TEXT NOT NULL,
       created_at INTEGER NOT NULL,
       expires_at INTEGER NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS books (
+      user_id TEXT NOT NULL,
+      id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '📒',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      archived INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, id),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
@@ -91,6 +108,7 @@ function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_bills_user_month ON bills(user_id, month);
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_books_user ON books(user_id, archived, sort_order);
     CREATE INDEX IF NOT EXISTS idx_fixed_items_user ON fixed_items(user_id, enabled);
   `)
 
@@ -177,6 +195,42 @@ function cleanUser(user) {
     createdAt: user.created_at,
     avatarData: user.avatar_data || ''
   }
+}
+
+function normalizeBookId(value = '') {
+  const bookId = String(value || '').trim()
+  return /^[a-z0-9_-]{1,32}$/i.test(bookId) ? bookId : 'personal'
+}
+
+function mapBook(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon,
+    sortOrder: row.sort_order,
+    archived: Boolean(row.archived),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+function ensureUserBooks(userId) {
+  const now = nowIso()
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO books (user_id, id, name, icon, sort_order, archived, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+  `)
+  DEFAULT_BOOKS.forEach((book) => {
+    insert.run(userId, book.id, book.name, book.icon, book.sortOrder, now, now)
+  })
+}
+
+function activeBookIdForUser(userId, requestedBookId) {
+  ensureUserBooks(userId)
+  const bookId = normalizeBookId(requestedBookId)
+  const exists = db.prepare('SELECT id FROM books WHERE user_id = ? AND id = ? AND archived = 0')
+    .get(userId, bookId)
+  return exists ? bookId : 'personal'
 }
 
 function getSessionUser(req) {
@@ -366,6 +420,7 @@ async function handleApi(req, res) {
 
     db.prepare('INSERT INTO users (id, email, nickname, password_hash, created_at) VALUES (?, ?, ?, ?, ?)')
       .run(user.id, user.email, user.nickname, user.password_hash, user.created_at)
+    ensureUserBooks(user.id)
     db.prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
       .run(token, user.id, Date.now(), expiresAt)
 
@@ -386,6 +441,7 @@ async function handleApi(req, res) {
       return
     }
 
+    ensureUserBooks(user.id)
     const token = randomId()
     db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now())
     db.prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
@@ -410,6 +466,9 @@ async function handleApi(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/me') {
     const user = getSessionUser(req)
+    if (user) {
+      ensureUserBooks(user.id)
+    }
     json(res, 200, { user: user ? cleanUser(user) : null })
     return
   }
@@ -531,6 +590,41 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'GET' && url.pathname === '/api/books') {
+    ensureUserBooks(user.id)
+    const books = db.prepare(`
+      SELECT *
+      FROM books
+      WHERE user_id = ? AND archived = 0
+      ORDER BY sort_order ASC, created_at ASC
+    `).all(user.id).map(mapBook)
+    json(res, 200, { books })
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/books') {
+    const body = await readBody(req)
+    const name = String(body.name || '').trim()
+    if (!name || name.length > 18) {
+      json(res, 400, { error: '账本名称需要 1-18 个字' })
+      return
+    }
+    const now = nowIso()
+    const book = {
+      id: normalizeBookId(body.id) === 'personal' ? `book_${randomId().slice(0, 12)}` : normalizeBookId(body.id),
+      name,
+      icon: String(body.icon || '📒').trim().slice(0, 4) || '📒',
+      sortOrder: Number(db.prepare('SELECT COUNT(*) AS count FROM books WHERE user_id = ?').get(user.id).count || 0)
+    }
+    db.prepare(`
+      INSERT INTO books (user_id, id, name, icon, sort_order, archived, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+    `).run(user.id, book.id, book.name, book.icon, book.sortOrder, now, now)
+    const saved = db.prepare('SELECT * FROM books WHERE user_id = ? AND id = ?').get(user.id, book.id)
+    json(res, 201, { book: mapBook(saved) })
+    return
+  }
+
   if (req.method === 'POST' && url.pathname === '/api/profile') {
     const body = await readBody(req)
     const nickname = String(body.nickname ?? user.nickname).trim()
@@ -578,35 +672,37 @@ async function handleApi(req, res) {
   if (req.method === 'GET' && url.pathname === '/api/summary') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
     const period = normalizePeriod(url.searchParams.get('period') || '')
+    const bookId = activeBookIdForUser(user.id, url.searchParams.get('bookId') || '')
     const range = periodRange(period, month)
-    const income = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'income'")
-      .get(user.id, range.start, range.end).total
-    const expense = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'")
-      .get(user.id, range.start, range.end).total
+    const income = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ? AND type = 'income'")
+      .get(user.id, bookId, range.start, range.end).total
+    const expense = db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ? AND type = 'expense'")
+      .get(user.id, bookId, range.start, range.end).total
     const budget = db.prepare('SELECT * FROM budgets WHERE user_id = ? AND book_id = ? AND month = ?')
-      .get(user.id, 'personal', month)
+      .get(user.id, bookId, month)
     const ranking = db.prepare(`
       SELECT category, SUM(amount) AS amount
       FROM bills
-      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
+      WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ? AND type = 'expense'
       GROUP BY category
       ORDER BY amount DESC
-    `).all(user.id, range.start, range.end)
+    `).all(user.id, bookId, range.start, range.end)
     const budgetTotal = budget ? budget.total : 0
     const daysInPeriod = period === 'year' ? 12 : new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()
     const highestExpense = db.prepare(`
       SELECT category, amount, date, note
       FROM bills
-      WHERE user_id = ? AND date >= ? AND date < ? AND type = 'expense'
+      WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ? AND type = 'expense'
       ORDER BY amount DESC
       LIMIT 1
-    `).get(user.id, range.start, range.end) || null
-    const billCount = db.prepare('SELECT COUNT(*) AS count FROM bills WHERE user_id = ? AND date >= ? AND date < ?')
-      .get(user.id, range.start, range.end).count
+    `).get(user.id, bookId, range.start, range.end) || null
+    const billCount = db.prepare('SELECT COUNT(*) AS count FROM bills WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ?')
+      .get(user.id, bookId, range.start, range.end).count
 
     json(res, 200, {
       month,
       period,
+      bookId,
       label: range.label,
       income,
       expense,
@@ -625,14 +721,15 @@ async function handleApi(req, res) {
   if (req.method === 'GET' && url.pathname === '/api/bills') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
     const period = normalizePeriod(url.searchParams.get('period') || '')
+    const bookId = activeBookIdForUser(user.id, url.searchParams.get('bookId') || '')
     const range = periodRange(period, month)
     const bills = db.prepare(`
       SELECT *
       FROM bills
-      WHERE user_id = ? AND date >= ? AND date < ?
+      WHERE user_id = ? AND book_id = ? AND date >= ? AND date < ?
       ORDER BY date DESC, created_at DESC
-    `).all(user.id, range.start, range.end).map(mapBill)
-    json(res, 200, { bills, period, label: range.label })
+    `).all(user.id, bookId, range.start, range.end).map(mapBill)
+    json(res, 200, { bills, period, bookId, label: range.label })
     return
   }
 
@@ -642,7 +739,7 @@ async function handleApi(req, res) {
     const bill = {
       id: randomId(),
       userId: user.id,
-      bookId: 'personal',
+      bookId: activeBookIdForUser(user.id, body.bookId || ''),
       type: body.type === 'income' ? 'income' : 'expense',
       amount: toMoneyNumber(body.amount),
       category: String(body.category || '其他').trim() || '其他',
@@ -690,18 +787,20 @@ async function handleApi(req, res) {
 
   if (req.method === 'GET' && url.pathname === '/api/budget') {
     const month = normalizeMonth(url.searchParams.get('month') || '')
+    const bookId = activeBookIdForUser(user.id, url.searchParams.get('bookId') || '')
     const budget = db.prepare('SELECT * FROM budgets WHERE user_id = ? AND book_id = ? AND month = ?')
-      .get(user.id, 'personal', month)
-    json(res, 200, { budget: budget ? mapBudget(budget) : { month, total: 0 } })
+      .get(user.id, bookId, month)
+    json(res, 200, { budget: budget ? mapBudget(budget) : { month, bookId, total: 0 } })
     return
   }
 
   if (req.method === 'PUT' && url.pathname === '/api/budget') {
     const body = await readBody(req)
     const month = normalizeMonth(body.month)
+    const bookId = activeBookIdForUser(user.id, body.bookId || '')
     const total = toMoneyNumber(body.total)
     const existing = db.prepare('SELECT * FROM budgets WHERE user_id = ? AND book_id = ? AND month = ?')
-      .get(user.id, 'personal', month)
+      .get(user.id, bookId, month)
 
     if (existing) {
       db.prepare('UPDATE budgets SET total = ?, updated_at = ? WHERE id = ?').run(total, nowIso(), existing.id)
@@ -709,20 +808,21 @@ async function handleApi(req, res) {
       db.prepare(`
         INSERT INTO budgets (id, user_id, book_id, month, total, warn_rate, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(randomId(), user.id, 'personal', month, total, 0.8, nowIso(), nowIso())
+      `).run(randomId(), user.id, bookId, month, total, 0.8, nowIso(), nowIso())
     }
 
     const budget = db.prepare('SELECT * FROM budgets WHERE user_id = ? AND book_id = ? AND month = ?')
-      .get(user.id, 'personal', month)
+      .get(user.id, bookId, month)
     json(res, 200, { budget: mapBudget(budget) })
     return
   }
 
   if (req.method === 'GET' && url.pathname === '/api/fixed-items') {
-    const items = db.prepare('SELECT * FROM fixed_items WHERE user_id = ? AND enabled = 1 ORDER BY created_at DESC')
-      .all(user.id)
+    const bookId = activeBookIdForUser(user.id, url.searchParams.get('bookId') || '')
+    const items = db.prepare('SELECT * FROM fixed_items WHERE user_id = ? AND book_id = ? AND enabled = 1 ORDER BY created_at DESC')
+      .all(user.id, bookId)
       .map(mapFixedItem)
-    json(res, 200, { items })
+    json(res, 200, { items, bookId })
     return
   }
 
@@ -732,7 +832,7 @@ async function handleApi(req, res) {
     const item = {
       id: randomId(),
       userId: user.id,
-      bookId: 'personal',
+      bookId: activeBookIdForUser(user.id, body.bookId || ''),
       name: String(body.name || '').trim() || category,
       category,
       defaultAmount: toMoneyNumber(body.defaultAmount),

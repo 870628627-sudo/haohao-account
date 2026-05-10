@@ -4,6 +4,10 @@ const BEIJING_TIME_ZONE = 'Asia/Shanghai'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '零食', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
+const fallbackBooks = [
+  { id: 'personal', name: '日常账本', icon: '🏠' },
+  { id: 'travel', name: '旅行账本', icon: '🧳' }
+]
 
 const categoryIcons = {
   早餐: '🥣',
@@ -42,6 +46,8 @@ const state = {
   bills: [],
   summary: null,
   fixedItems: [],
+  books: fallbackBooks,
+  activeBookId: localStorage.getItem('haohao-active-book') || 'personal',
   profileTool: '',
   accountMenuOpen: false,
   accountPanel: '',
@@ -67,6 +73,14 @@ function money(value) {
 
 function categoryIcon(category) {
   return categoryIcons[category] || '✨'
+}
+
+function currentBook() {
+  return state.books.find((book) => book.id === state.activeBookId) || fallbackBooks[0]
+}
+
+function bookQuery() {
+  return `bookId=${encodeURIComponent(state.activeBookId)}`
 }
 
 function beijingParts(date = new Date()) {
@@ -220,9 +234,19 @@ function avatarSrc() {
 }
 
 async function syncFixedItems() {
-  const fixedItems = await api('/api/fixed-items')
+  const fixedItems = await api(`/api/fixed-items?${bookQuery()}`)
   state.fixedItems = fixedItems.items || []
   return state.fixedItems
+}
+
+async function syncBooks() {
+  const data = await api('/api/books')
+  state.books = data.books?.length ? data.books : fallbackBooks
+  if (!state.books.some((book) => book.id === state.activeBookId)) {
+    state.activeBookId = 'personal'
+    localStorage.setItem('haohao-active-book', state.activeBookId)
+  }
+  return state.books
 }
 
 function renderFixedItemList() {
@@ -580,6 +604,7 @@ function renderAuth(mode = 'login') {
       })
       state.user = data.user
       refreshHeroMessage()
+      await syncBooks()
       await loadDashboard()
       toast(mode === 'login' ? '欢迎回来，豪豪已经开始盯账。' : '注册成功，豪豪正式上岗。')
     } catch (error) {
@@ -593,6 +618,7 @@ function renderApp() {
   const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
   const categories = state.billType === 'income' ? incomeCategories : expenseCategories
   const heroMessage = currentHeroMessage(summary)
+  const activeBook = currentBook()
   if (!categories.includes(state.selectedCategory)) {
     state.selectedCategory = categories[0]
   }
@@ -606,7 +632,7 @@ function renderApp() {
           </button>
           <div class="brand-copy">
             <strong class="brand-title">豪豪记账</strong>
-            <span class="brand-username">${escapeAttr(state.user.nickname)}</span>
+            <span class="brand-username">${escapeAttr(state.user.nickname)} · ${escapeAttr(activeBook.name)}</span>
           </div>
         </div>
         <div class="userbar">
@@ -753,6 +779,20 @@ function renderApp() {
       ${state.accountMenuOpen ? `
         <div class="account-menu-sheet" role="dialog" aria-modal="true" aria-label="账户菜单">
           <div class="account-menu-card">
+            <div class="book-switcher">
+              <div class="book-switcher-head">
+                <strong>账本切换</strong>
+                <span>当前：${escapeAttr(activeBook.name)}</span>
+              </div>
+              <div class="book-options">
+                ${state.books.map((book) => `
+                  <button class="book-option ${state.activeBookId === book.id ? 'active' : ''}" data-book-id="${escapeAttr(book.id)}" type="button">
+                    <span class="book-option-icon">${escapeAttr(book.icon || '📒')}</span>
+                    <strong>${escapeAttr(book.name)}</strong>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
             <button class="account-menu-item" data-account-panel="detail" type="button">
               <strong>用户详情</strong>
               <span>${escapeAttr(state.user.nickname)} · 查看账号信息</span>
@@ -937,6 +977,25 @@ function bindAppEvents() {
       state.accountMenuOpen = false
       state.accountPanel = button.dataset.accountPanel
       renderApp()
+    })
+  })
+
+  document.querySelectorAll('[data-book-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const nextBookId = button.dataset.bookId
+      if (!nextBookId || nextBookId === state.activeBookId) return
+      captureBillDraft()
+      state.activeBookId = nextBookId
+      localStorage.setItem('haohao-active-book', state.activeBookId)
+      state.accountMenuOpen = false
+      state.accountPanel = ''
+      state.profileTool = ''
+      try {
+        await loadDashboard()
+        toast(`已切换到${currentBook().name}。`)
+      } catch (error) {
+        toast(error.message)
+      }
     })
   })
 
@@ -1142,6 +1201,8 @@ function bindAppEvents() {
   document.querySelector('#logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' })
     state.user = null
+    state.books = fallbackBooks
+    state.activeBookId = localStorage.getItem('haohao-active-book') || 'personal'
     state.accountMenuOpen = false
     state.accountPanel = ''
     state.adminLoginOpen = false
@@ -1221,6 +1282,7 @@ function bindAppEvents() {
     const payload = Object.fromEntries(form.entries())
     payload.type = state.billType
     payload.category = state.selectedCategory
+    payload.bookId = state.activeBookId
     try {
       const data = await api('/api/bills', { method: 'POST', body: JSON.stringify(payload) })
       judge(bearComment(data.bill))
@@ -1241,7 +1303,7 @@ function bindAppEvents() {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     try {
-      await api('/api/budget', { method: 'PUT', body: JSON.stringify({ month: state.month, total: form.get('total') }) })
+      await api('/api/budget', { method: 'PUT', body: JSON.stringify({ month: state.month, total: form.get('total'), bookId: state.activeBookId }) })
       toast('预算已保存，豪豪开始盯线。')
       await loadDashboard()
     } catch (error) {
@@ -1255,6 +1317,7 @@ function bindAppEvents() {
     const form = new FormData(formEl)
     const payload = Object.fromEntries(form.entries())
     payload.name = String(payload.name || '').trim() || String(payload.category || '').trim()
+    payload.bookId = state.activeBookId
     if (Number(payload.defaultAmount) <= 0) {
       toast('请填写固定项目金额。')
       return
@@ -1321,7 +1384,8 @@ function bindAppEvents() {
             category: item.category,
             date: today,
             note: item.name,
-            isFixed: true
+            isFixed: true,
+            bookId: state.activeBookId
           })
         })
         judge(bearComment(data.bill))
@@ -1658,8 +1722,8 @@ async function createShareImage() {
 
 async function loadDashboard() {
   const [summary, bills] = await Promise.all([
-    api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`),
-    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}`)
+    api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`),
+    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`)
   ])
   await syncFixedItems()
   state.summary = summary
@@ -1673,6 +1737,7 @@ async function init() {
     state.user = data.user
     if (state.user) {
       refreshHeroMessage()
+      await syncBooks()
       await loadDashboard()
     } else {
       renderAuth()
