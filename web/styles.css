@@ -290,6 +290,21 @@ button {
   white-space: nowrap;
 }
 
+.hero-tip {
+  position: relative;
+  z-index: 1;
+  max-width: 580px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(241, 226, 204, 0.72);
+  border-radius: 16px;
+  background: rgba(255, 249, 241, 0.72);
+  color: #7c5d39;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
 .budget-progress,
 .budget-chip-progress {
   overflow: hidden;
@@ -1642,6 +1657,13 @@ button {
   .hero-budget-meta {
     margin-top: 7px;
     font-size: 12px;
+  }
+
+  .hero-tip {
+    margin-top: 0;
+    padding: 9px 10px;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   .profile-panel {

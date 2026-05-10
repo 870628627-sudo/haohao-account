@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v41'
-const APP_VERSION = '20260511-cute-tabs-profile'
+const CACHE_NAME = 'haohudget-v42'
+const APP_VERSION = '20260511-full-ranking-tip'
 const ASSETS = [
   '/',
   '/index.html',

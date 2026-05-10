@@ -94,6 +94,16 @@ function budgetInlineText(summary) {
     : `本月还没设置预算 · 支出 ¥${money(summary.expense)}`
 }
 
+function budgetTip(summary) {
+  if (!Number(summary.budget || 0)) {
+    return '豪豪小建议：先给本月设个预算，钱包就有一条温柔的护栏。'
+  }
+  const rate = Number(summary.usedRate || 0)
+  if (rate >= 0.9) return '豪豪小建议：预算快见底了，今天先进入温柔省钱模式。'
+  if (rate >= 0.5) return '豪豪小建议：预算进入中段，接下来花钱稍微带点数。'
+  return '豪豪小建议：预算很稳，今天的钱包还有一点底气。'
+}
+
 function monthLabel(month) {
   const [year, monthNumber] = String(month || '').split('-')
   if (!year || !monthNumber) return '当前月份'
@@ -586,6 +596,7 @@ function renderApp() {
               <div class="budget-progress"><span style="width:${budgetBarWidth(summary)}%"></span></div>
               <div class="hero-budget-meta">${budgetInlineText(summary)}</div>
             </div>
+            <div class="hero-tip">${budgetTip(summary)}</div>
           </section>
 
           <section class="card view-section ${state.activeView === 'bills' ? 'active-view' : ''}" data-view="bills">
@@ -671,7 +682,7 @@ function renderApp() {
           <section class="card view-section ${state.activeView === 'stats' ? 'active-view' : ''}" data-view="stats">
             <div class="section-title"><h3>支出排行</h3></div>
             <div class="rank">
-              ${summary.ranking.length ? summary.ranking.slice(0, 5).map((item) => `
+              ${summary.ranking.length ? summary.ranking.map((item) => `
                 <div class="rank-row">
                   <span>${item.category}</span>
                   <div class="bar"><span style="width:${Math.max(6, Math.round(item.amount / maxRank * 100))}%"></span></div>
