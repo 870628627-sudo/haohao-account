@@ -447,6 +447,7 @@ button {
 .input,
 .select {
   width: 100%;
+  min-width: 0;
   height: 46px;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -503,6 +504,24 @@ button {
 
 .form-grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.travel-date-input {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.travel-date-input::-webkit-date-and-time-value {
+  min-width: 0;
+  text-align: left;
+}
+
+.travel-date-input::-webkit-calendar-picker-indicator {
+  margin-left: 0;
 }
 
 .list {

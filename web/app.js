@@ -447,11 +447,11 @@ function renderTripForm() {
         <div class="form-grid two travel-date-grid">
           <div class="field">
             <label>开始日期</label>
-            <input class="input" name="startDate" type="date" value="${beijingDateString()}" required />
+            <input class="input travel-date-input" name="startDate" type="date" value="${beijingDateString()}" required />
           </div>
           <div class="field">
             <label>结束日期</label>
-            <input class="input" name="endDate" type="date" value="${beijingDateString()}" required />
+            <input class="input travel-date-input" name="endDate" type="date" value="${beijingDateString()}" required />
           </div>
         </div>
         <div class="field">
