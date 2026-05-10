@@ -63,16 +63,27 @@ if ! command -v pm2 >/dev/null 2>&1; then
   npm install -g pm2
 fi
 
-if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-  pm2 reload "$APP_NAME" --update-env || pm2 restart "$APP_NAME" --update-env
-else
-  pm2 start ecosystem.config.cjs
-fi
+pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
+NODE_ENV=production PORT=5177 pm2 start server.cjs \
+  --name "$APP_NAME" \
+  --interpreter "$(command -v node)" \
+  --update-env
 
 pm2 save
 
 if command -v curl >/dev/null 2>&1; then
-  curl -fsS http://127.0.0.1:5177 >/dev/null
+  for i in $(seq 1 15); do
+    if curl -fsS http://127.0.0.1:5177 >/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+
+  if ! curl -fsS http://127.0.0.1:5177 >/dev/null; then
+    pm2 status
+    pm2 logs "$APP_NAME" --lines 80 --nostream || true
+    exit 1
+  fi
 fi
 
 echo "Deploy finished for $APP_NAME at $(date -Is)"
