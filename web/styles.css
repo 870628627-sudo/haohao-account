@@ -149,27 +149,10 @@ button {
   font-weight: 700;
 }
 
-.hero-date {
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(91, 53, 28, 0.16);
-  border-radius: 16px;
-  background: rgba(255, 254, 253, 0.68);
+.hero-period {
   color: #6d5034;
-}
-
-.hero-date span {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.hero-date strong {
-  font-size: 16px;
-  line-height: 1;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .hero h2 {
@@ -612,6 +595,7 @@ button {
   font-weight: 800;
 }
 
+.account-menu-sheet,
 .account-sheet {
   position: fixed;
   inset: 0;
@@ -621,6 +605,40 @@ button {
   padding: 18px;
   background: rgba(53, 36, 23, 0.22);
   backdrop-filter: blur(8px);
+}
+
+.account-menu-card {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 254, 253, 0.96);
+  box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
+}
+
+.account-menu-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  min-height: 70px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff9f1;
+  color: var(--ink);
+  text-align: left;
+}
+
+.account-menu-item strong {
+  font-size: 16px;
+}
+
+.account-menu-item span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .account-card {
@@ -975,22 +993,14 @@ button {
   }
 
   .hero-meta {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     gap: 10px;
   }
 
-  .hero-date {
-    display: grid;
-    grid-template-columns: auto auto;
-    justify-content: end;
-    min-height: 48px;
-    padding: 0 14px;
-    border-radius: 16px;
-  }
-
-  .hero-date strong {
-    font-size: 18px;
+  .hero-period {
+    font-size: 14px;
   }
 
   .hero-stats,
@@ -1187,9 +1197,14 @@ button {
     min-height: 36px;
   }
 
+  .account-menu-sheet,
   .account-sheet {
     place-items: end center;
     padding: 14px;
+  }
+
+  .account-menu-card {
+    width: 100%;
   }
 
   .account-card {

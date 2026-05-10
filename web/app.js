@@ -13,7 +13,8 @@ const state = {
   bills: [],
   summary: null,
   fixedItems: [],
-  accountPanelOpen: false,
+  accountMenuOpen: false,
+  accountPanel: '',
   sharePanelOpen: false,
   shareImageUrl: '',
   heroMessageIndex: Math.floor(Math.random() * 12),
@@ -345,10 +346,7 @@ function renderApp() {
             <div class="hero-copy">
               <div class="hero-meta">
                 <div class="eyebrow">本月概览</div>
-                <div class="hero-date">
-                  <span>当前账期</span>
-                  <strong>${monthLabel(state.month)}</strong>
-                </div>
+                <div class="hero-period">${monthLabel(state.month)}</div>
               </div>
               <h2>${heroMessage.title}</h2>
               <p class="hero-text">${heroMessage.text}</p>
@@ -499,28 +497,45 @@ function renderApp() {
         <button class="${state.activeView === 'profile' ? 'active' : ''}" data-view-tab="profile"><span>◇</span>固定</button>
       </nav>
 
-      ${state.accountPanelOpen ? `
+      ${state.accountMenuOpen ? `
+        <div class="account-menu-sheet" role="dialog" aria-modal="true" aria-label="账户菜单">
+          <div class="account-menu-card">
+            <button class="account-menu-item" data-account-panel="detail" type="button">
+              <strong>用户详情</strong>
+              <span>${escapeAttr(state.user.nickname)} · 查看账号信息</span>
+            </button>
+            <button class="account-menu-item" data-account-panel="password" type="button">
+              <strong>更改密码</strong>
+              <span>更新登录密码，保护账本隐私</span>
+            </button>
+          </div>
+        </div>
+      ` : ''}
+
+      ${state.accountPanel ? `
         <div class="account-sheet" role="dialog" aria-modal="true" aria-label="用户详情">
           <div class="account-card">
             <div class="section-title">
               <div>
-                <h3>用户详情</h3>
-                <p class="muted">豪豪知道是谁在认真记账。</p>
+                <h3>${state.accountPanel === 'detail' ? '用户详情' : '更改密码'}</h3>
+                <p class="muted">${state.accountPanel === 'detail' ? '豪豪知道是谁在认真记账。' : '换一把更稳的钥匙，账本更安心。'}</p>
               </div>
               <button class="btn secondary account-close" id="accountCloseBtn" type="button">关闭</button>
             </div>
-            <div class="account-details">
-              <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
-              <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
-              <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
-            </div>
-            <form class="form account-form" id="passwordForm">
-              <div class="section-title account-form-title"><h3>更改密码</h3></div>
-              <input class="input" name="currentPassword" type="password" placeholder="当前密码" required />
-              <input class="input" name="newPassword" type="password" placeholder="新密码，至少 6 位" required />
-              <input class="input" name="confirmPassword" type="password" placeholder="再次输入新密码" required />
-              <button class="btn" type="submit">保存新密码</button>
-            </form>
+            ${state.accountPanel === 'detail' ? `
+              <div class="account-details">
+                <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
+                <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
+                <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
+              </div>
+            ` : `
+              <form class="form account-form" id="passwordForm">
+                <input class="input" name="currentPassword" type="password" placeholder="当前密码" required />
+                <input class="input" name="newPassword" type="password" placeholder="新密码，至少 6 位" required />
+                <input class="input" name="confirmPassword" type="password" placeholder="再次输入新密码" required />
+                <button class="btn" type="submit">保存新密码</button>
+              </form>
+            `}
           </div>
         </div>
       ` : ''}
@@ -551,18 +566,33 @@ function renderApp() {
 
 function bindAppEvents() {
   document.querySelector('#accountBtn').addEventListener('click', () => {
-    state.accountPanelOpen = true
+    state.accountMenuOpen = true
     renderApp()
   })
 
   document.querySelector('#accountCloseBtn')?.addEventListener('click', () => {
-    state.accountPanelOpen = false
+    state.accountPanel = ''
     renderApp()
+  })
+
+  document.querySelector('.account-menu-sheet')?.addEventListener('click', (event) => {
+    if (event.target.classList.contains('account-menu-sheet')) {
+      state.accountMenuOpen = false
+      renderApp()
+    }
+  })
+
+  document.querySelectorAll('[data-account-panel]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.accountMenuOpen = false
+      state.accountPanel = button.dataset.accountPanel
+      renderApp()
+    })
   })
 
   document.querySelector('.account-sheet')?.addEventListener('click', (event) => {
     if (event.target.classList.contains('account-sheet')) {
-      state.accountPanelOpen = false
+      state.accountPanel = ''
       renderApp()
     }
   })
@@ -583,7 +613,7 @@ function bindAppEvents() {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword })
       })
-      state.accountPanelOpen = false
+      state.accountPanel = ''
       renderApp()
       toast('密码已更新。')
     } catch (error) {
@@ -644,7 +674,8 @@ function bindAppEvents() {
   document.querySelector('#logoutBtn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' })
     state.user = null
-    state.accountPanelOpen = false
+    state.accountMenuOpen = false
+    state.accountPanel = ''
     renderAuth()
   })
 
