@@ -1363,17 +1363,18 @@ button {
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
+    background: linear-gradient(180deg, #fff0c8 0%, #fff4dc 62%, #fffaf4 100%);
     padding-bottom: 78px;
   }
 
   .app-shell[data-active-view="home"] .layout {
-    flex: 1;
-    overflow: hidden;
+    flex: 0 0 auto;
+    overflow: visible;
   }
 
   .app-shell[data-active-view="home"] .stack:first-child {
     display: block;
-    height: 100%;
+    height: auto;
     min-height: 0;
   }
 
@@ -1453,35 +1454,49 @@ button {
 
   .hero {
     min-height: auto;
-    padding: 6px 0 0;
+    margin: 0 -14px;
+    padding: 12px 14px 14px;
     border: 0;
     border-radius: 0;
-    background: #fff0c8;
+    background: transparent;
     box-shadow: none;
     flex-direction: column;
   }
 
   .view-section.active-view.hero {
     display: flex;
-    height: 100%;
-    justify-content: space-between;
+    height: auto;
+    gap: 10px;
+    justify-content: flex-start;
+    overflow: hidden;
+  }
+
+  .hero-copy {
+    width: 100%;
+    max-width: none;
   }
 
   .hero-bear-button {
     position: static;
-    width: min(56vw, 210px);
-    margin: 6px auto 8px;
+    width: min(42vw, 154px);
+    margin: 4px auto 6px;
     display: block;
     opacity: 1;
   }
 
   .hero h2 {
-    margin-top: 14px;
-    font-size: 34px;
+    margin: 8px 0 8px;
+    font-size: 27px;
+    line-height: 1.08;
   }
 
   .hero-text {
-    line-height: 1.5;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .hero-meta {
@@ -1502,12 +1517,16 @@ button {
   .hero-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 0;
+    margin-top: 2px;
   }
 
   .mini-card {
-    padding: 10px 8px;
-    border-radius: 16px;
+    padding: 9px 8px;
+    border-radius: 14px;
+  }
+
+  .mini-card .muted {
+    font-size: 12px;
   }
 
   .mini-card strong {
@@ -1515,12 +1534,22 @@ button {
   }
 
   .hero-budget {
+    margin-top: 0;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .hero-budget-head strong {
+    font-size: 18px;
+  }
+
+  .budget-progress {
+    height: 9px;
     margin-top: 8px;
-    padding: 12px;
-    border-radius: 16px;
   }
 
   .hero-budget-meta {
+    margin-top: 7px;
     font-size: 12px;
   }
 
@@ -1773,7 +1802,7 @@ button {
 
 @media (max-width: 620px) {
   .hero-bear-button {
-    width: min(58vw, 210px);
+    width: min(42vw, 154px);
   }
 
   .bill-title {
