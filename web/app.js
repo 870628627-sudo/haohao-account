@@ -1035,7 +1035,8 @@ function bindAppEvents() {
 
   document.querySelector('#fixedForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
+    const formEl = event.currentTarget
+    const form = new FormData(formEl)
     const payload = Object.fromEntries(form.entries())
     payload.name = String(payload.name || '').trim() || String(payload.category || '').trim()
     if (Number(payload.defaultAmount) <= 0) {
@@ -1053,7 +1054,7 @@ function bindAppEvents() {
     }
     try {
       const data = await api('/api/fixed-items', { method: 'POST', body: JSON.stringify(payload) })
-      event.currentTarget.reset()
+      formEl.reset()
       state.activeView = 'profile'
       const savedItem = data.item || optimisticItem
       state.fixedItems = [savedItem, ...state.fixedItems.filter((item) => item.id !== savedItem.id)]
@@ -1068,7 +1069,7 @@ function bindAppEvents() {
         const items = await syncFixedItems()
         const hasNewItem = items.some((item) => !previousIds.has(item.id))
         if (hasNewItem) {
-          event.currentTarget.reset()
+          formEl.reset()
           renderApp()
           toast('固定支出项目已保存。')
           return
