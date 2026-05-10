@@ -14,6 +14,7 @@ const state = {
   bills: [],
   summary: null,
   fixedItems: [],
+  profileTool: '',
   accountMenuOpen: false,
   accountPanel: '',
   adminLoginOpen: false,
@@ -85,6 +86,86 @@ function escapeAttr(value) {
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
+}
+
+function avatarSrc() {
+  return state.user?.avatarData || bearSrc
+}
+
+function renderFixedItemList() {
+  return `
+    <div class="list fixed-list">
+      ${state.fixedItems.length ? state.fixedItems.map((item) => `
+        <div class="bill">
+          <div><strong>${escapeAttr(item.name)}</strong><small>${escapeAttr(item.category)}</small></div>
+          <div class="amount">
+            <strong>¥${money(item.defaultAmount)}</strong>
+            <div class="bill-actions">
+              <button class="btn secondary" data-record-fixed="${escapeAttr(item.id)}" type="button">记本月</button>
+              <button class="btn danger" data-delete-fixed="${escapeAttr(item.id)}" type="button">删除</button>
+            </div>
+          </div>
+        </div>
+      `).join('') : '<p class="muted">还没有固定支出项目。</p>'}
+    </div>
+  `
+}
+
+function renderProfileSection(summary) {
+  const isBudget = state.profileTool === 'budget'
+  const isFixed = state.profileTool === 'fixed'
+  return `
+    <section class="card view-section profile-panel ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
+      <div class="section-title">
+        <div>
+          <h3>固定设置</h3>
+          <p class="muted">预算和固定支出都从这里点开管理。</p>
+        </div>
+      </div>
+      <div class="profile-tool-tabs">
+        <button class="${isBudget ? 'active' : ''}" data-profile-tool="budget" type="button">
+          <strong>月度预算</strong>
+          <span>¥${money(summary.budget)} · 剩余 ¥${money(summary.budgetLeft)}</span>
+        </button>
+        <button class="${isFixed ? 'active' : ''}" data-profile-tool="fixed" type="button">
+          <strong>固定支出项目</strong>
+          <span>${state.fixedItems.length} 项 · 点开新增或修改</span>
+        </button>
+      </div>
+      ${isBudget ? `
+        <div class="profile-tool-body">
+          <div class="section-title compact-title"><h3>月度预算</h3><strong>${Math.round(summary.usedRate * 100)}%</strong></div>
+          <div class="bar"><span style="width:${Math.min(100, Math.round(summary.usedRate * 100))}%"></span></div>
+          <p class="muted">预算 ¥${money(summary.budget)}，剩余 ¥${money(summary.budgetLeft)}</p>
+          <form class="form budget-form" id="budgetForm">
+            <input class="input" name="total" type="number" min="0" step="0.01" placeholder="设置本月总预算" value="${summary.budget || ''}" />
+            <button class="btn secondary" type="submit">保存预算</button>
+          </form>
+        </div>
+      ` : ''}
+      ${isFixed ? `
+        <div class="profile-tool-body">
+          <div class="section-title compact-title"><h3>固定支出</h3><button class="btn secondary" data-profile-tool-close type="button">收起</button></div>
+          <form class="form" id="fixedForm">
+            <input class="input" name="name" placeholder="项目名，可不填，默认用分类名" />
+            <div class="grid-2">
+              <input class="input" name="defaultAmount" type="number" min="0.01" step="0.01" placeholder="金额" required />
+              <select class="select" name="category">${fixedCategories.map((item) => `<option>${item}</option>`).join('')}</select>
+            </div>
+            <button class="btn secondary" type="submit">保存项目</button>
+          </form>
+          ${renderFixedItemList()}
+        </div>
+      ` : ''}
+      ${!isBudget && !isFixed ? `
+        <div class="profile-hint">
+          <strong>点上面的标签开始设置</strong>
+          <span>预算和固定支出不再直接展开，页面会更清爽一点。</span>
+        </div>
+        ${renderFixedItemList()}
+      ` : ''}
+    </section>
+  `
 }
 
 function captureBillDraft() {
@@ -331,7 +412,7 @@ function renderApp() {
       <header class="topbar">
         <div class="brand">
           <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
-            <img src="${bearSrc}" alt="豪豪小熊" />
+            <img src="${escapeAttr(avatarSrc())}" alt="账户头像" />
           </button>
           <div>
             <h1>豪豪记账<span class="brand-nickname">${escapeAttr(state.user.nickname)}</span></h1>
@@ -455,41 +536,7 @@ function renderApp() {
             </div>
           </section>
 
-          <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
-            <div class="section-title"><h3>月度预算</h3><strong>${Math.round(summary.usedRate * 100)}%</strong></div>
-            <div class="bar"><span style="width:${Math.min(100, Math.round(summary.usedRate * 100))}%"></span></div>
-            <p class="muted">预算 ¥${money(summary.budget)}，剩余 ¥${money(summary.budgetLeft)}</p>
-            <form class="form budget-form" id="budgetForm">
-              <input class="input" name="total" type="number" min="0" step="0.01" placeholder="设置本月总预算" value="${summary.budget || ''}" />
-              <button class="btn secondary" type="submit">保存预算</button>
-            </form>
-          </section>
-
-          <section class="card view-section ${state.activeView === 'profile' ? 'active-view' : ''}" data-view="profile">
-            <div class="section-title"><h3>固定支出</h3></div>
-            <form class="form" id="fixedForm">
-              <input class="input" name="name" placeholder="项目名，可不填，默认用分类名" />
-              <div class="grid-2">
-                <input class="input" name="defaultAmount" type="number" min="0.01" step="0.01" placeholder="金额" required />
-                <select class="select" name="category">${fixedCategories.map((item) => `<option>${item}</option>`).join('')}</select>
-              </div>
-              <button class="btn secondary" type="submit">保存项目</button>
-            </form>
-            <div class="list">
-              ${state.fixedItems.length ? state.fixedItems.map((item) => `
-                <div class="bill">
-                  <div><strong>${item.name}</strong><small>${item.category}</small></div>
-                  <div class="amount">
-                    <strong>¥${money(item.defaultAmount)}</strong>
-                    <div class="bill-actions">
-                      <button class="btn secondary" data-record-fixed="${item.id}" type="button">记本月</button>
-                      <button class="btn danger" data-delete-fixed="${item.id}" type="button">删除</button>
-                    </div>
-                  </div>
-                </div>
-              `).join('') : '<p class="muted">还没有固定支出项目。</p>'}
-            </div>
-          </section>
+          ${renderProfileSection(summary)}
         </aside>
       </div>
 
@@ -531,6 +578,17 @@ function renderApp() {
               <button class="btn secondary account-close" id="accountCloseBtn" type="button">关闭</button>
             </div>
             ${state.accountPanel === 'detail' ? `
+              <div class="avatar-editor">
+                <img src="${escapeAttr(avatarSrc())}" alt="当前头像" />
+                <div>
+                  <strong>头像</strong>
+                  <span>上传一张喜欢的图片，左上角小熊会换成它。</span>
+                  <label class="btn secondary avatar-upload">
+                    更换头像
+                    <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                  </label>
+                </div>
+              </div>
               <div class="account-details">
                 <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
                 <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
@@ -724,6 +782,27 @@ function bindAppEvents() {
     }
   })
 
+  document.querySelector('#avatarInput')?.addEventListener('change', async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('请选择图片文件。')
+      return
+    }
+    try {
+      const avatarData = await avatarDataFromFile(file)
+      const data = await api('/api/profile', {
+        method: 'POST',
+        body: JSON.stringify({ nickname: state.user.nickname, avatarData })
+      })
+      state.user = data.user
+      renderApp()
+      toast('头像已更新。')
+    } catch (error) {
+      toast(error.message || '头像更新失败。')
+    }
+  })
+
   document.querySelector('#adminCloseBtn')?.addEventListener('click', () => {
     state.adminLoginOpen = false
     renderApp()
@@ -831,6 +910,20 @@ function bindAppEvents() {
     })
   })
 
+  document.querySelectorAll('[data-profile-tool]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.profileTool = button.dataset.profileTool
+      renderApp()
+    })
+  })
+
+  document.querySelectorAll('[data-profile-tool-close]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.profileTool = ''
+      renderApp()
+    })
+  })
+
   document.querySelector('#monthInput').addEventListener('change', async (event) => {
     state.month = state.period === 'year' ? `${event.target.value || selectedYear()}-01` : event.target.value
     await loadDashboard()
@@ -888,7 +981,7 @@ function bindAppEvents() {
     }
   })
 
-  document.querySelector('#budgetForm').addEventListener('submit', async (event) => {
+  document.querySelector('#budgetForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     try {
@@ -900,7 +993,7 @@ function bindAppEvents() {
     }
   })
 
-  document.querySelector('#fixedForm').addEventListener('submit', async (event) => {
+  document.querySelector('#fixedForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const payload = Object.fromEntries(form.entries())
@@ -1020,6 +1113,25 @@ function loadImage(src) {
     image.onerror = reject
     image.src = src
   })
+}
+
+async function avatarDataFromFile(file) {
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const image = await loadImage(objectUrl)
+    const size = 320
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    const sourceSize = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height)
+    const sx = ((image.naturalWidth || image.width) - sourceSize) / 2
+    const sy = ((image.naturalHeight || image.height) - sourceSize) / 2
+    ctx.drawImage(image, sx, sy, sourceSize, sourceSize, 0, 0, size, size)
+    return canvas.toDataURL('image/jpeg', 0.86)
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
 }
 
 function roundedRect(ctx, x, y, width, height, radius) {

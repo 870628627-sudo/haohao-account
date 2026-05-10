@@ -33,7 +33,8 @@ function initDb() {
       email TEXT NOT NULL UNIQUE,
       nickname TEXT NOT NULL,
       password_hash TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      avatar_data TEXT NOT NULL DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS sessions (
@@ -91,6 +92,11 @@ function initDb() {
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
     CREATE INDEX IF NOT EXISTS idx_fixed_items_user ON fixed_items(user_id, enabled);
   `)
+
+  const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name)
+  if (!userColumns.includes('avatar_data')) {
+    db.exec("ALTER TABLE users ADD COLUMN avatar_data TEXT NOT NULL DEFAULT ''")
+  }
 }
 
 function randomId() {
@@ -148,7 +154,8 @@ function cleanUser(user) {
     id: user.id,
     nickname: user.nickname,
     email: user.email,
-    createdAt: user.created_at
+    createdAt: user.created_at,
+    avatarData: user.avatar_data || ''
   }
 }
 
@@ -174,7 +181,7 @@ function readBody(req) {
     let body = ''
     req.on('data', (chunk) => {
       body += chunk
-      if (body.length > 1024 * 1024) {
+      if (body.length > 3 * 1024 * 1024) {
         req.destroy()
         reject(new Error('Request body too large'))
       }
@@ -447,12 +454,22 @@ async function handleApi(req, res) {
 
   if (req.method === 'POST' && url.pathname === '/api/profile') {
     const body = await readBody(req)
-    const nickname = String(body.nickname || '').trim()
+    const nickname = String(body.nickname ?? user.nickname).trim()
     if (!nickname || nickname.length > 24) {
       json(res, 400, { error: '昵称需要 1-24 个字' })
       return
     }
-    db.prepare('UPDATE users SET nickname = ? WHERE id = ?').run(nickname, user.id)
+    const hasAvatarData = Object.prototype.hasOwnProperty.call(body, 'avatarData')
+    const avatarData = hasAvatarData ? String(body.avatarData || '').trim() : user.avatar_data
+    if (hasAvatarData && avatarData && !/^data:image\/(png|jpe?g|webp);base64,/i.test(avatarData)) {
+      json(res, 400, { error: '头像格式不支持' })
+      return
+    }
+    if (avatarData.length > 900000) {
+      json(res, 400, { error: '头像图片太大，请换一张小一点的图片' })
+      return
+    }
+    db.prepare('UPDATE users SET nickname = ?, avatar_data = ? WHERE id = ?').run(nickname, avatarData, user.id)
     const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
     json(res, 200, { user: cleanUser(updated) })
     return
