@@ -577,9 +577,6 @@ function renderTravelHome() {
       <section class="travel-card-grid">
         ${state.trips.length ? state.trips.map((trip) => `
           <button class="trip-card" data-trip-open="${escapeAttr(trip.id)}" type="button">
-            <div class="trip-card-cover">
-              ${trip.coverData ? `<img src="${escapeAttr(trip.coverData)}" alt="${escapeAttr(trip.title)}" />` : `<span>${categoryIcon('旅游')}</span>`}
-            </div>
             <div class="trip-card-body">
               <div class="trip-card-head">
                 <strong>${escapeAttr(trip.title)}</strong>

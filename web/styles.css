@@ -1164,6 +1164,7 @@ button {
 
 .travel-new-btn {
   flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .travel-overview-strip {
@@ -1203,42 +1204,21 @@ button {
 
 .trip-card {
   display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
-  gap: 14px;
   width: 100%;
-  min-height: 160px;
-  padding: 14px;
+  min-height: 82px;
+  padding: 12px;
   border: 1px solid rgba(241, 226, 204, 0.94);
-  border-radius: 22px;
+  border-radius: 18px;
   background: rgba(255, 254, 253, 0.9);
   color: var(--ink);
   text-align: left;
   box-shadow: 0 12px 34px rgba(87, 54, 24, 0.06);
 }
 
-.trip-card-cover {
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  min-height: 132px;
-  border-radius: 18px;
-  background: #fff0c8;
-}
-
-.trip-card-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.trip-card-cover span {
-  font-size: 42px;
-}
-
 .trip-card-body {
   min-width: 0;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .trip-card-head,
@@ -1252,7 +1232,7 @@ button {
 
 .trip-card-head strong {
   overflow: hidden;
-  font-size: 20px;
+  font-size: 17px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1273,9 +1253,14 @@ button {
 .trip-card-money {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  line-height: 1.45;
+  line-height: 1.35;
+}
+
+.trip-card .budget-progress {
+  height: 8px;
+  margin-top: 0;
 }
 
 .travel-empty {
@@ -2272,20 +2257,13 @@ button {
   }
 
   .trip-card {
-    grid-template-columns: 84px minmax(0, 1fr);
-    gap: 12px;
-    min-height: 136px;
-    padding: 12px;
-    border-radius: 20px;
-  }
-
-  .trip-card-cover {
-    min-height: 112px;
-    border-radius: 16px;
+    min-height: 78px;
+    padding: 11px;
+    border-radius: 18px;
   }
 
   .trip-card-head strong {
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .trip-card-money {
