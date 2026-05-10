@@ -16,6 +16,9 @@ const state = {
   fixedItems: [],
   accountMenuOpen: false,
   accountPanel: '',
+  adminLoginOpen: false,
+  adminPanelOpen: false,
+  adminSummary: null,
   sharePanelOpen: false,
   shareImageUrl: '',
   heroMessageIndex: Math.floor(Math.random() * 12),
@@ -27,6 +30,8 @@ const state = {
 }
 
 const app = document.querySelector('#app')
+let bearTapCount = 0
+let bearTapTimer = null
 
 function money(value) {
   return Number(value || 0).toFixed(2)
@@ -331,7 +336,7 @@ function renderApp() {
             <img src="${bearSrc}" alt="豪豪小熊" />
           </button>
           <div>
-            <h1>豪豪记账</h1>
+            <h1>豪豪记账<span class="brand-nickname">${escapeAttr(state.user.nickname)}</span></h1>
             <p>个人账本 · ${state.month}</p>
           </div>
         </div>
@@ -529,6 +534,10 @@ function renderApp() {
                 <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
                 <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
               </div>
+              <form class="form account-form" id="profileForm">
+                <input class="input" name="nickname" maxlength="24" placeholder="新的用户名" value="${escapeAttr(state.user.nickname)}" required />
+                <button class="btn secondary" type="submit">保存用户名</button>
+              </form>
             ` : `
               <form class="form account-form" id="passwordForm">
                 <input class="input" name="currentPassword" type="password" placeholder="当前密码" required />
@@ -562,16 +571,94 @@ function renderApp() {
           </div>
         </div>
       ` : ''}
+
+      ${state.adminLoginOpen ? `
+        <div class="admin-sheet" role="dialog" aria-modal="true" aria-label="管理员登录">
+          <div class="admin-card">
+            <div class="section-title">
+              <div>
+                <h3>管理员登录</h3>
+                <p class="muted">隐藏入口已触发，请输入管理员密码。</p>
+              </div>
+              <button class="btn secondary account-close" id="adminCloseBtn" type="button">关闭</button>
+            </div>
+            <form class="form" id="adminLoginForm">
+              <input class="input" name="password" type="password" placeholder="管理员密码" required />
+              <button class="btn" type="submit">进入管理</button>
+            </form>
+          </div>
+        </div>
+      ` : ''}
+
+      ${state.adminPanelOpen ? `
+        <div class="admin-sheet" role="dialog" aria-modal="true" aria-label="管理员系统">
+          <div class="admin-card admin-panel-card">
+            <div class="section-title">
+              <div>
+                <h3>管理员系统</h3>
+                <p class="muted">豪豪后台 · 用户和账本概览</p>
+              </div>
+              <button class="btn secondary account-close" id="adminPanelCloseBtn" type="button">关闭</button>
+            </div>
+            <div class="admin-metrics">
+              <div><span>用户</span><strong>${state.adminSummary?.totals?.users || 0}</strong></div>
+              <div><span>账单</span><strong>${state.adminSummary?.totals?.bills || 0}</strong></div>
+              <div><span>固定项</span><strong>${state.adminSummary?.totals?.fixedItems || 0}</strong></div>
+              <div><span>总支出</span><strong>¥${money(state.adminSummary?.totals?.expense || 0)}</strong></div>
+            </div>
+            <div class="admin-users">
+              ${(state.adminSummary?.users || []).map((user) => `
+                <div class="admin-user">
+                  <div>
+                    <strong>${escapeAttr(user.nickname)}</strong>
+                    <small>${escapeAttr(user.email)} · ${formatDateTime(user.createdAt)}</small>
+                  </div>
+                  <div>
+                    <span>${user.billCount || 0} 笔</span>
+                    <small>支出 ¥${money(user.expense)}</small>
+                  </div>
+                </div>
+              `).join('') || '<p class="muted">暂无用户。</p>'}
+            </div>
+            <button class="btn secondary" id="adminLogoutBtn" type="button">退出管理员</button>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `
 
   bindAppEvents()
 }
 
+async function openAdminEntry() {
+  try {
+    const data = await api('/api/admin/summary')
+    state.adminSummary = data
+    state.adminPanelOpen = true
+    state.adminLoginOpen = false
+  } catch (error) {
+    state.adminLoginOpen = true
+    state.adminPanelOpen = false
+  }
+  state.accountMenuOpen = false
+  state.accountPanel = ''
+  renderApp()
+}
+
 function bindAppEvents() {
   document.querySelector('#accountBtn').addEventListener('click', () => {
-    state.accountMenuOpen = true
-    renderApp()
+    bearTapCount += 1
+    window.clearTimeout(bearTapTimer)
+    if (bearTapCount >= 5) {
+      bearTapCount = 0
+      openAdminEntry()
+      return
+    }
+    bearTapTimer = window.setTimeout(() => {
+      bearTapCount = 0
+      state.accountMenuOpen = true
+      renderApp()
+    }, 320)
   })
 
   document.querySelector('#accountCloseBtn')?.addEventListener('click', () => {
@@ -623,6 +710,67 @@ function bindAppEvents() {
     } catch (error) {
       toast(error.message)
     }
+  })
+
+  document.querySelector('#profileForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    try {
+      const data = await api('/api/profile', {
+        method: 'POST',
+        body: JSON.stringify({ nickname: form.get('nickname') })
+      })
+      state.user = data.user
+      state.accountPanel = ''
+      renderApp()
+      toast('用户名已更新。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelector('#adminCloseBtn')?.addEventListener('click', () => {
+    state.adminLoginOpen = false
+    renderApp()
+  })
+
+  document.querySelector('#adminPanelCloseBtn')?.addEventListener('click', () => {
+    state.adminPanelOpen = false
+    renderApp()
+  })
+
+  document.querySelector('.admin-sheet')?.addEventListener('click', (event) => {
+    if (event.target.classList.contains('admin-sheet')) {
+      state.adminLoginOpen = false
+      state.adminPanelOpen = false
+      renderApp()
+    }
+  })
+
+  document.querySelector('#adminLoginForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    try {
+      await api('/api/admin/login', {
+        method: 'POST',
+        body: JSON.stringify({ password: form.get('password') })
+      })
+      const data = await api('/api/admin/summary')
+      state.adminSummary = data
+      state.adminLoginOpen = false
+      state.adminPanelOpen = true
+      renderApp()
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelector('#adminLogoutBtn')?.addEventListener('click', async () => {
+    await api('/api/admin/logout', { method: 'POST' })
+    state.adminSummary = null
+    state.adminPanelOpen = false
+    toast('已退出管理员。')
+    renderApp()
   })
 
   document.querySelector('#shareBillBtn')?.addEventListener('click', async () => {
@@ -683,6 +831,8 @@ function bindAppEvents() {
     state.user = null
     state.accountMenuOpen = false
     state.accountPanel = ''
+    state.adminLoginOpen = false
+    state.adminPanelOpen = false
     renderAuth()
   })
 

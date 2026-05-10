@@ -11,6 +11,8 @@ const DATA_DIR = path.join(ROOT, 'data')
 const SQLITE_PATH = path.join(DATA_DIR, 'haohudget.sqlite')
 
 const COOKIE_NAME = 'haohudget_session'
+const ADMIN_COOKIE_NAME = 'haohudget_admin'
+const ADMIN_PASSWORD = '030825'
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
 
 function ensureDataDir() {
@@ -111,6 +113,12 @@ function verifyPassword(password, stored) {
   return expected.length === candidate.length && crypto.timingSafeEqual(expected, candidate)
 }
 
+function adminCookieValue() {
+  return crypto.createHmac('sha256', ADMIN_PASSWORD)
+    .update('haohao-account-admin')
+    .digest('hex')
+}
+
 function json(res, status, payload, headers = {}) {
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -194,6 +202,14 @@ function requireUser(req, res) {
     return null
   }
   return user
+}
+
+function requireAdmin(req, res) {
+  if (parseCookies(req)[ADMIN_COOKIE_NAME] !== adminCookieValue()) {
+    json(res, 401, { error: '请先登录管理员' })
+    return false
+  }
+  return true
 }
 
 function normalizeMonth(value = '') {
@@ -371,8 +387,73 @@ async function handleApi(req, res) {
     return
   }
 
+  if (req.method === 'POST' && url.pathname === '/api/admin/login') {
+    const body = await readBody(req)
+    if (String(body.password || '') !== ADMIN_PASSWORD) {
+      json(res, 401, { error: '管理员密码不正确' })
+      return
+    }
+    json(res, 200, { ok: true }, {
+      'Set-Cookie': `${ADMIN_COOKIE_NAME}=${adminCookieValue()}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${ONE_WEEK / 1000}`
+    })
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/admin/logout') {
+    json(res, 200, { ok: true }, {
+      'Set-Cookie': `${ADMIN_COOKIE_NAME}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`
+    })
+    return
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/admin/summary') {
+    if (!requireAdmin(req, res)) return
+    const users = db.prepare(`
+      SELECT
+        users.id,
+        users.email,
+        users.nickname,
+        users.created_at,
+        COUNT(bills.id) AS bill_count,
+        COALESCE(SUM(CASE WHEN bills.type = 'income' THEN bills.amount ELSE 0 END), 0) AS income,
+        COALESCE(SUM(CASE WHEN bills.type = 'expense' THEN bills.amount ELSE 0 END), 0) AS expense
+      FROM users
+      LEFT JOIN bills ON bills.user_id = users.id
+      GROUP BY users.id
+      ORDER BY users.created_at DESC
+      LIMIT 50
+    `).all()
+    const totals = {
+      users: db.prepare('SELECT COUNT(*) AS count FROM users').get().count,
+      bills: db.prepare('SELECT COUNT(*) AS count FROM bills').get().count,
+      fixedItems: db.prepare('SELECT COUNT(*) AS count FROM fixed_items WHERE enabled = 1').get().count,
+      income: db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE type = 'income'").get().total,
+      expense: db.prepare("SELECT COALESCE(SUM(amount), 0) AS total FROM bills WHERE type = 'expense'").get().total
+    }
+    json(res, 200, { totals, users: users.map(cleanUser).map((user, index) => ({
+      ...user,
+      billCount: users[index].bill_count,
+      income: users[index].income,
+      expense: users[index].expense
+    })) })
+    return
+  }
+
   const user = requireUser(req, res)
   if (!user) {
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/profile') {
+    const body = await readBody(req)
+    const nickname = String(body.nickname || '').trim()
+    if (!nickname || nickname.length > 24) {
+      json(res, 400, { error: '昵称需要 1-24 个字' })
+      return
+    }
+    db.prepare('UPDATE users SET nickname = ? WHERE id = ?').run(nickname, user.id)
+    const updated = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id)
+    json(res, 200, { user: cleanUser(updated) })
     return
   }
 

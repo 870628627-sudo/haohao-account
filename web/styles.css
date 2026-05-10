@@ -78,9 +78,18 @@ button {
 }
 
 .brand h1 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin: 0;
   font-size: 24px;
   line-height: 1.1;
+}
+
+.brand-nickname {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .brand p,
@@ -724,7 +733,8 @@ button {
   margin-bottom: 0;
 }
 
-.share-sheet {
+.share-sheet,
+.admin-sheet {
   position: fixed;
   inset: 0;
   z-index: 38;
@@ -735,7 +745,8 @@ button {
   backdrop-filter: blur(8px);
 }
 
-.share-card {
+.share-card,
+.admin-card {
   width: min(460px, 100%);
   max-height: calc(100dvh - 36px);
   overflow: auto;
@@ -744,6 +755,67 @@ button {
   border-radius: 24px;
   background: var(--paper);
   box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
+}
+
+.admin-panel-card {
+  width: min(620px, 100%);
+}
+
+.admin-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.admin-metrics div {
+  min-height: 74px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff9f1;
+}
+
+.admin-metrics span,
+.admin-user small,
+.admin-user span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-metrics strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 21px;
+}
+
+.admin-users {
+  display: grid;
+  margin-bottom: 14px;
+}
+
+.admin-user {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #f5eadc;
+}
+
+.admin-user:first-child {
+  border-top: 0;
+}
+
+.admin-user strong,
+.admin-user small,
+.admin-user span {
+  display: block;
+}
+
+.admin-user > div:last-child {
+  flex: 0 0 auto;
+  text-align: right;
 }
 
 .share-preview {
@@ -984,6 +1056,14 @@ button {
 
   .brand h1 {
     font-size: 18px;
+  }
+
+  .brand-nickname {
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
   }
 
   .brand p,
@@ -1266,16 +1346,22 @@ button {
     padding: 18px;
   }
 
-  .share-sheet {
+  .share-sheet,
+  .admin-sheet {
     place-items: end center;
     padding: 14px;
   }
 
-  .share-card {
+  .share-card,
+  .admin-card {
     width: 100%;
     max-height: calc(100dvh - 28px);
     border-radius: 22px;
     padding: 18px;
+  }
+
+  .admin-metrics {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .category-grid {
