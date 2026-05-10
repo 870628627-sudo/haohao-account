@@ -1440,17 +1440,13 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
 }
 
 function pieChartData(ranking) {
-  const items = (ranking || []).filter((item) => Number(item.amount) > 0)
-  const top = items.slice(0, 4).map((item) => ({ category: item.category, amount: Number(item.amount) }))
-  const otherAmount = items.slice(4).reduce((total, item) => total + Number(item.amount || 0), 0)
-  if (otherAmount > 0) {
-    top.push({ category: '其他', amount: otherAmount })
-  }
-  return top
+  return (ranking || [])
+    .filter((item) => Number(item.amount) > 0)
+    .map((item) => ({ category: item.category, amount: Number(item.amount) }))
 }
 
 function drawPieChart(ctx, items, cx, cy, radius, legendStartY = 864) {
-  const colors = ['#f5b94c', '#5b351c', '#327451', '#a44b35', '#d98b58']
+  const colors = ['#f5b94c', '#5b351c', '#327451', '#a44b35', '#d98b58', '#6d8f5b', '#e7a7a1', '#7b6fb0', '#d2a24c', '#4f8f8c', '#bc6c45', '#8f6d4e']
   const total = items.reduce((sum, item) => sum + item.amount, 0)
   let start = -Math.PI / 2
   items.forEach((item, index) => {
@@ -1539,9 +1535,10 @@ async function createShareImage() {
   const structureTop = isYearShare ? 650 : 810
   const pieCenterY = isYearShare ? 850 : 976
   const legendStartY = isYearShare ? 738 : 864
+  const pieItems = pieChartData(summary.ranking)
   const canvas = document.createElement('canvas')
   canvas.width = 900
-  canvas.height = 1280
+  canvas.height = Math.max(1280, pieItems.length ? legendStartY + pieItems.length * 62 + 110 : 1280)
   const ctx = canvas.getContext('2d')
 
   ctx.fillStyle = '#fffaf4'
@@ -1626,7 +1623,6 @@ async function createShareImage() {
   ctx.fillStyle = '#5b351c'
   ctx.font = `900 32px ${canvasFontFamily}`
   ctx.fillText('支出结构', 86, structureTop)
-  const pieItems = pieChartData(summary.ranking)
   if (pieItems.length) {
     drawPieChart(ctx, pieItems, 246, pieCenterY, 128, legendStartY)
   } else {
