@@ -4,6 +4,33 @@ const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '�
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
 
+const categoryIcons = {
+  早餐: '🥣',
+  午餐: '🍱',
+  晚餐: '🍚',
+  水果: '🍓',
+  奶茶: '🧋',
+  零食: '🍪',
+  交通: '🚌',
+  话费网费: '📶',
+  日用品: '🧻',
+  医疗: '💊',
+  娱乐: '🎬',
+  王者荣耀: '🎮',
+  保卫向日葵: '🌻',
+  旅游: '🧳',
+  购物: '🛍️',
+  理发: '💈',
+  人情往来: '🎁',
+  工资: '💼',
+  生活费: '🏠',
+  零花钱: '🪙',
+  兼职: '🧰',
+  红包: '🧧',
+  退款: '↩️',
+  其他: '✨'
+}
+
 const state = {
   user: null,
   month: new Date().toISOString().slice(0, 7),
@@ -35,6 +62,10 @@ const app = document.querySelector('#app')
 
 function money(value) {
   return Number(value || 0).toFixed(2)
+}
+
+function categoryIcon(category) {
+  return categoryIcons[category] || '✨'
 }
 
 function budgetPercent(summary) {
@@ -605,8 +636,9 @@ function renderApp() {
                 <label>分类</label>
                 <div class="category-grid">
                   ${categories.map((item) => `
-                    <button class="category-chip ${state.selectedCategory === item ? 'active' : ''}" type="button" data-category="${item}">
-                      ${item}
+                    <button class="category-chip ${state.selectedCategory === item ? 'active' : ''}" type="button" data-category="${item}" aria-pressed="${state.selectedCategory === item ? 'true' : 'false'}">
+                      <span class="category-icon">${categoryIcon(item)}</span>
+                      <span class="category-name">${item}</span>
                     </button>
                   `).join('')}
                 </div>
@@ -691,18 +723,20 @@ function renderApp() {
               <button class="btn secondary account-close" id="accountCloseBtn" type="button">关闭</button>
             </div>
             ${state.accountPanel === 'detail' ? `
-              <div class="avatar-editor">
-                <img src="${escapeAttr(avatarSrc())}" alt="当前头像" />
-                <div>
-                  <strong>头像</strong>
-                  <div class="avatar-actions">
-                    <label class="avatar-action">
-                      更换图片
-                      <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" />
-                    </label>
-                    <button class="avatar-action" id="avatarResetBtn" type="button">系统小熊</button>
-                  </div>
+              <div class="account-profile-card">
+                <img class="account-profile-avatar" src="${escapeAttr(avatarSrc())}" alt="当前头像" />
+                <div class="account-profile-copy">
+                  <span>当前账户</span>
+                  <strong>${escapeAttr(state.user.nickname)}</strong>
+                  <small>${escapeAttr(state.user.email)}</small>
                 </div>
+              </div>
+              <div class="avatar-actions account-avatar-actions">
+                <label class="avatar-action">
+                  更换图片
+                  <input id="avatarInput" type="file" accept="image/png,image/jpeg,image/webp" />
+                </label>
+                <button class="avatar-action" id="avatarResetBtn" type="button">系统小熊</button>
               </div>
               <div class="account-details">
                 <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
@@ -710,6 +744,7 @@ function renderApp() {
                 <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
               </div>
               <form class="form account-form" id="profileForm">
+                <label class="account-form-label">修改用户名</label>
                 <input class="input" name="nickname" maxlength="24" placeholder="新的用户名" value="${escapeAttr(state.user.nickname)}" required />
                 <button class="btn secondary" type="submit">保存用户名</button>
               </form>
@@ -1118,6 +1153,7 @@ function bindAppEvents() {
       state.selectedCategory = button.dataset.category
       document.querySelectorAll('[data-category]').forEach((item) => {
         item.classList.toggle('active', item.dataset.category === state.selectedCategory)
+        item.setAttribute('aria-pressed', item.dataset.category === state.selectedCategory ? 'true' : 'false')
       })
     })
   })

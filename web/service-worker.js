@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v40'
-const APP_VERSION = '20260511-mobile-spacing'
+const CACHE_NAME = 'haohudget-v41'
+const APP_VERSION = '20260511-cute-tabs-profile'
 const ASSETS = [
   '/',
   '/index.html',
