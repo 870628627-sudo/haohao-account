@@ -502,6 +502,14 @@ button {
   margin-bottom: 18px;
 }
 
+.stats-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 .stats-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -663,6 +671,56 @@ button {
 
 .account-form-title {
   margin-bottom: 0;
+}
+
+.share-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 38;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(53, 36, 23, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.share-card {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(53, 36, 23, 0.22);
+}
+
+.share-preview {
+  display: block;
+  width: min(320px, 100%);
+  margin: 0 auto 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fffaf4;
+  box-shadow: 0 16px 36px rgba(87, 54, 24, 0.12);
+}
+
+.share-loading {
+  display: grid;
+  place-items: center;
+  min-height: 260px;
+  margin-bottom: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  background: #fff9f1;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .auth-page {
@@ -1081,6 +1139,14 @@ button {
     gap: 6px;
   }
 
+  .stats-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-toolbar .btn {
+    width: 100%;
+  }
+
   .compact-date-row {
     max-width: none;
   }
@@ -1127,6 +1193,18 @@ button {
   }
 
   .account-card {
+    width: 100%;
+    max-height: calc(100dvh - 28px);
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .share-sheet {
+    place-items: end center;
+    padding: 14px;
+  }
+
+  .share-card {
     width: 100%;
     max-height: calc(100dvh - 28px);
     border-radius: 22px;

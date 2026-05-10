@@ -1,5 +1,5 @@
 const bearSrc = '/assets/bear-ledger.jpg'
-const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '人情往来', '其他']
+const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '小荷包', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '其他']
 
@@ -14,6 +14,8 @@ const state = {
   summary: null,
   fixedItems: [],
   accountPanelOpen: false,
+  sharePanelOpen: false,
+  shareImageUrl: '',
   heroMessageIndex: Math.floor(Math.random() * 12),
   billDraft: {
     amount: '',
@@ -37,6 +39,10 @@ function monthLabel(month) {
 function formatDateTime(value) {
   if (!value) return '暂无'
   return String(value).replace('T', ' ').slice(0, 16)
+}
+
+function summaryLabel() {
+  return state.period === 'year' ? `${selectedYear()}年度账单` : `${monthLabel(state.month)}账单`
 }
 
 const heroMessages = [
@@ -221,6 +227,16 @@ function bearComment(record) {
     if (amount <= 50) return pickComment(record, ['购物小额还行，豪豪先不审太狠。', '这笔购物比较克制，钱包暂时还能坐稳。', '买得不大，记得别让购物车继续膨胀。'])
     if (amount <= 200) return pickComment(record, ['购物支出有点份量，豪豪建议问一句：真需要吗？', '这笔买完记得用，别让它变成抽屉库存。', '钱包被拿捏了一下，豪豪已经记录证据。'])
     return pickComment(record, ['购物大额出现，豪豪建议你和预算进行一次严肃对话。', '这单很猛，钱包可能需要售后安慰。', '买得挺果断，豪豪希望这不是冲动消费的胜利。'])
+  }
+
+  if (category === '理发') {
+    if (amount <= 60) return pickComment(record, ['发型支出很稳，豪豪批准你精神一点。', '理发记上了，钱包和发际线都需要被认真对待。', '这笔形象管理还算克制，豪豪点头。'])
+    return pickComment(record, ['这次理发有点高级，豪豪希望发型撑得起价格。', '形象管理可以，但钱包刚刚也被修剪了一下。', '理发支出偏高，豪豪建议帅气多维持几天。'])
+  }
+
+  if (category === '小荷包') {
+    if (amount <= 100) return pickComment(record, ['小荷包支出已记录，豪豪建议别让它偷偷变大。', '这笔小荷包还算温和，钱包暂时不发言。', '小荷包动了一下，豪豪已经看见。'])
+    return pickComment(record, ['小荷包这笔不小，豪豪建议查查是不是在偷偷膨胀。', '这笔小荷包很有存在感，预算表已经抬头。', '豪豪提醒：小荷包也要接受账本监督。'])
   }
 
   if (category === '旅游') {
@@ -410,12 +426,9 @@ function renderApp() {
             <div class="period-tabs top-period-tabs">
               ${['month', 'year'].map((period) => `<button class="${state.period === period ? 'active' : ''}" data-period="${period}">${periodName(period)}</button>`).join('')}
             </div>
-            <div class="section-title">
-              <div>
-                <h3>${periodName(state.period)}</h3>
-                <p class="muted">${summary.label || state.month} · 豪豪替你把账算明白了</p>
-              </div>
+            <div class="stats-toolbar">
               ${periodDateInput('statsMonthInput')}
+              <button class="btn secondary" id="shareBillBtn" type="button">分享账单</button>
             </div>
             <div class="stats-summary">
               <div class="stat-tile primary"><span>总支出</span><strong>¥${money(summary.expense)}</strong></div>
@@ -511,6 +524,25 @@ function renderApp() {
           </div>
         </div>
       ` : ''}
+
+      ${state.sharePanelOpen ? `
+        <div class="share-sheet" role="dialog" aria-modal="true" aria-label="分享账单">
+          <div class="share-card">
+            <div class="section-title">
+              <div>
+                <h3>分享账单</h3>
+                <p class="muted">生成一张可爱账单图，适合保存或发给自己复盘。</p>
+              </div>
+              <button class="btn secondary account-close" id="shareCloseBtn" type="button">关闭</button>
+            </div>
+            ${state.shareImageUrl ? `<img class="share-preview" src="${state.shareImageUrl}" alt="豪豪账单分享图" />` : '<div class="share-loading">豪豪正在排版账单...</div>'}
+            <div class="share-actions">
+              <button class="btn" id="shareNativeBtn" type="button">系统分享</button>
+              <button class="btn secondary" id="shareDownloadBtn" type="button">保存图片</button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     </div>
   `
 
@@ -556,6 +588,56 @@ function bindAppEvents() {
       toast('密码已更新。')
     } catch (error) {
       toast(error.message)
+    }
+  })
+
+  document.querySelector('#shareBillBtn')?.addEventListener('click', async () => {
+    try {
+      state.shareImageUrl = ''
+      state.sharePanelOpen = true
+      renderApp()
+      state.shareImageUrl = await createShareImage()
+      renderApp()
+    } catch (error) {
+      state.sharePanelOpen = false
+      renderApp()
+      toast('账单图生成失败，请稍后再试。')
+    }
+  })
+
+  document.querySelector('#shareCloseBtn')?.addEventListener('click', () => {
+    state.sharePanelOpen = false
+    renderApp()
+  })
+
+  document.querySelector('.share-sheet')?.addEventListener('click', (event) => {
+    if (event.target.classList.contains('share-sheet')) {
+      state.sharePanelOpen = false
+      renderApp()
+    }
+  })
+
+  document.querySelector('#shareDownloadBtn')?.addEventListener('click', () => {
+    if (!state.shareImageUrl) return
+    const link = document.createElement('a')
+    link.href = state.shareImageUrl
+    link.download = `豪豪记账-${summaryLabel()}.png`
+    link.click()
+  })
+
+  document.querySelector('#shareNativeBtn')?.addEventListener('click', async () => {
+    if (!state.shareImageUrl) return
+    try {
+      const response = await fetch(state.shareImageUrl)
+      const blob = await response.blob()
+      const file = new File([blob], `豪豪记账-${summaryLabel()}.png`, { type: 'image/png' })
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。`, files: [file] })
+      } else {
+        await navigator.share({ title: '豪豪记账', text: `${summaryLabel()}，豪豪已经算好了。` })
+      }
+    } catch (error) {
+      toast('当前浏览器不支持直接分享，可以先保存图片。')
     }
   })
 
@@ -706,6 +788,188 @@ function bindAppEvents() {
       }
     })
   })
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = src
+  })
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + width, y, x + width, y + height, r)
+  ctx.arcTo(x + width, y + height, x, y + height, r)
+  ctx.arcTo(x, y + height, x, y, r)
+  ctx.arcTo(x, y, x + width, y, r)
+  ctx.closePath()
+}
+
+function drawText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
+  const chars = String(text).split('')
+  let line = ''
+  let lines = 0
+  for (const char of chars) {
+    const next = line + char
+    if (ctx.measureText(next).width > maxWidth && line) {
+      ctx.fillText(line, x, y)
+      y += lineHeight
+      lines += 1
+      line = char
+      if (lines >= maxLines - 1) break
+    } else {
+      line = next
+    }
+  }
+  if (line && lines < maxLines) ctx.fillText(line, x, y)
+}
+
+function drawPill(ctx, x, y, text, fill, color) {
+  ctx.font = '700 24px sans-serif'
+  const width = ctx.measureText(text).width + 34
+  roundedRect(ctx, x, y, width, 44, 16)
+  ctx.fillStyle = fill
+  ctx.fill()
+  ctx.fillStyle = color
+  ctx.fillText(text, x + 17, y + 29)
+  return width
+}
+
+function drawMetric(ctx, x, y, width, label, value, color) {
+  roundedRect(ctx, x, y, width, 116, 22)
+  ctx.fillStyle = '#fff9f1'
+  ctx.fill()
+  ctx.strokeStyle = '#f1e2cc'
+  ctx.lineWidth = 2
+  ctx.stroke()
+  ctx.fillStyle = '#987a58'
+  ctx.font = '700 22px sans-serif'
+  ctx.fillText(label, x + 22, y + 34)
+  ctx.fillStyle = color || '#352417'
+  ctx.font = '900 34px sans-serif'
+  ctx.fillText(value, x + 22, y + 84)
+}
+
+async function createShareImage() {
+  const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [] }
+  const canvas = document.createElement('canvas')
+  canvas.width = 900
+  canvas.height = 1280
+  const ctx = canvas.getContext('2d')
+  const maxRank = Math.max(...summary.ranking.map((item) => item.amount), 1)
+
+  ctx.fillStyle = '#fffaf4'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  const gradient = ctx.createRadialGradient(120, 40, 20, 120, 40, 680)
+  gradient.addColorStop(0, 'rgba(245, 185, 76, 0.36)')
+  gradient.addColorStop(1, 'rgba(245, 185, 76, 0)')
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  roundedRect(ctx, 54, 54, 792, 1172, 34)
+  ctx.fillStyle = 'rgba(255, 254, 253, 0.94)'
+  ctx.fill()
+  ctx.strokeStyle = '#f1e2cc'
+  ctx.lineWidth = 2
+  ctx.stroke()
+
+  let bear = null
+  try {
+    bear = await loadImage(bearSrc)
+  } catch (error) {
+    bear = null
+  }
+
+  if (bear) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(136, 140, 50, 0, Math.PI * 2)
+    ctx.clip()
+    ctx.drawImage(bear, 86, 90, 100, 100)
+    ctx.restore()
+  } else {
+    ctx.beginPath()
+    ctx.arc(136, 140, 50, 0, Math.PI * 2)
+    ctx.fillStyle = '#fff0c8'
+    ctx.fill()
+    ctx.fillStyle = '#5b351c'
+    ctx.font = '900 34px sans-serif'
+    ctx.fillText('豪', 119, 153)
+  }
+
+  ctx.fillStyle = '#5b351c'
+  ctx.font = '900 42px sans-serif'
+  ctx.fillText('豪豪记账', 214, 130)
+  ctx.fillStyle = '#987a58'
+  ctx.font = '700 24px sans-serif'
+  ctx.fillText(`${summaryLabel()} · 钱花得明明白白`, 214, 170)
+
+  drawPill(ctx, 86, 232, '本期概览', '#fff0c8', '#5b351c')
+  ctx.fillStyle = '#352417'
+  ctx.font = '900 56px sans-serif'
+  ctx.fillText(summary.balance >= 0 ? '钱包暂时站稳了' : '钱包需要扶一把', 86, 326)
+  ctx.fillStyle = '#6d5034'
+  ctx.font = '700 26px sans-serif'
+  drawText(ctx, summary.balance >= 0 ? '豪豪已经把收入、支出和结余排好了队，月底少一点糊涂账。' : '本期结余为负，豪豪建议下次消费前先看一眼账单。', 86, 374, 700, 36, 2)
+
+  drawMetric(ctx, 86, 454, 228, '总收入', `¥${money(summary.income)}`, '#327451')
+  drawMetric(ctx, 336, 454, 228, '总支出', `¥${money(summary.expense)}`, '#a44b35')
+  drawMetric(ctx, 586, 454, 228, '结余', `¥${money(summary.balance)}`, summary.balance >= 0 ? '#327451' : '#a44b35')
+
+  roundedRect(ctx, 86, 616, 728, 118, 24)
+  ctx.fillStyle = '#fff9f1'
+  ctx.fill()
+  ctx.strokeStyle = '#f1e2cc'
+  ctx.stroke()
+  ctx.fillStyle = '#987a58'
+  ctx.font = '800 22px sans-serif'
+  ctx.fillText('预算使用', 112, 654)
+  ctx.fillStyle = '#352417'
+  ctx.font = '900 30px sans-serif'
+  ctx.fillText(`${Math.round(summary.usedRate * 100)}%`, 682, 654)
+  roundedRect(ctx, 112, 684, 650, 20, 10)
+  ctx.fillStyle = '#f5eadc'
+  ctx.fill()
+  roundedRect(ctx, 112, 684, Math.min(650, Math.round(summary.usedRate * 650)), 20, 10)
+  ctx.fillStyle = '#5b351c'
+  ctx.fill()
+
+  ctx.fillStyle = '#5b351c'
+  ctx.font = '900 32px sans-serif'
+  ctx.fillText('支出排行', 86, 810)
+  const ranking = summary.ranking.slice(0, 5)
+  if (ranking.length) {
+    ranking.forEach((item, index) => {
+      const y = 850 + index * 72
+      ctx.fillStyle = '#6d5034'
+      ctx.font = '800 24px sans-serif'
+      ctx.fillText(item.category, 86, y + 28)
+      roundedRect(ctx, 236, y + 10, 360, 18, 9)
+      ctx.fillStyle = '#f5eadc'
+      ctx.fill()
+      roundedRect(ctx, 236, y + 10, Math.max(22, Math.round(item.amount / maxRank * 360)), 18, 9)
+      ctx.fillStyle = index === 0 ? '#f5b94c' : '#5b351c'
+      ctx.fill()
+      ctx.fillStyle = '#352417'
+      ctx.font = '900 24px sans-serif'
+      ctx.fillText(`¥${money(item.amount)}`, 632, y + 28)
+    })
+  } else {
+    ctx.fillStyle = '#987a58'
+    ctx.font = '700 26px sans-serif'
+    ctx.fillText('暂无支出排行，豪豪暂时无瓜可吃。', 86, 864)
+  }
+
+  ctx.fillStyle = '#987a58'
+  ctx.font = '700 24px sans-serif'
+  ctx.fillText('由豪豪小熊生成 · 继续认真生活，也认真记账', 86, 1168)
+
+  return canvas.toDataURL('image/png')
 }
 
 async function loadDashboard() {
