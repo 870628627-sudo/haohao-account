@@ -573,7 +573,7 @@ function renderApp() {
               <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(summary.income)}</strong></div>
               <div class="stat-tile"><span>结余</span><strong class="${summary.balance >= 0 ? 'income' : 'expense'}">¥${money(summary.balance)}</strong></div>
               <div class="stat-tile"><span>${state.period === 'year' ? '月均支出' : '日均支出'}</span><strong>¥${money(summary.averageExpense)}</strong></div>
-              <div class="stat-tile"><span>记账笔数</span><strong>${summary.billCount || 0}</strong></div>
+              <div class="stat-tile"><span>消费笔数</span><strong>${summary.billCount || 0}</strong></div>
               <div class="stat-tile"><span>最高单笔</span><strong>${summary.highestExpense ? `¥${money(summary.highestExpense.amount)}` : '暂无'}</strong></div>
             </div>
           </section>

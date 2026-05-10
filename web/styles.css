@@ -638,6 +638,7 @@ button {
 }
 
 .stat-tile {
+  min-width: 0;
   min-height: 92px;
   padding: 14px;
   border: 1px solid var(--line);
@@ -661,6 +662,9 @@ button {
   margin-top: 10px;
   font-size: 24px;
   line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .budget-form {
@@ -1537,17 +1541,22 @@ button {
   }
 
   .stats-summary {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .stat-tile {
     min-height: 82px;
-    padding: 12px;
+    padding: 10px 8px;
+    border-radius: 16px;
+  }
+
+  .stat-tile span {
+    font-size: 12px;
   }
 
   .stat-tile strong {
-    font-size: 21px;
+    font-size: clamp(14px, 3.6vw, 20px);
   }
 
   .bill-actions {
