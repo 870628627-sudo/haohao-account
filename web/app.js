@@ -1,7 +1,7 @@
 const bearSrc = '/assets/bear-ledger.jpg'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
-const fixedCategories = ['水电燃气', '房租', '话费网费', '日用品', '会员订阅', '其他']
+const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '其他']
 
 const state = {
   user: null,
@@ -328,8 +328,7 @@ function renderApp() {
         </div>
 
         <aside class="stack">
-          <section class="card view-section ${state.activeView === 'add' ? 'active-view' : ''}" data-view="add">
-            <div class="section-title"><h3>记一笔</h3></div>
+          <section class="card view-section add-section ${state.activeView === 'add' ? 'active-view' : ''}" data-view="add">
             <form class="form" id="billForm">
               <div class="segmented">
                 <button class="segment ${state.billType === 'expense' ? 'active' : ''}" type="button" data-type="expense">支出</button>
