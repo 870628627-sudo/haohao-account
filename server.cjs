@@ -106,10 +106,45 @@ function initDb() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS trip_books (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      place TEXT NOT NULL,
+      start_date TEXT NOT NULL,
+      end_date TEXT NOT NULL,
+      budget REAL NOT NULL DEFAULT 0,
+      cover_data TEXT NOT NULL DEFAULT '',
+      note TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'planning',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS trip_bills (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      trip_id TEXT NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+      amount REAL NOT NULL,
+      category TEXT NOT NULL,
+      date TEXT NOT NULL,
+      payer TEXT NOT NULL DEFAULT '我',
+      participants TEXT NOT NULL DEFAULT '',
+      note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (trip_id) REFERENCES trip_books(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_bills_user_month ON bills(user_id, month);
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
     CREATE INDEX IF NOT EXISTS idx_books_user ON books(user_id, archived, sort_order);
     CREATE INDEX IF NOT EXISTS idx_fixed_items_user ON fixed_items(user_id, enabled);
+    CREATE INDEX IF NOT EXISTS idx_trip_books_user ON trip_books(user_id, start_date, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_trip_bills_trip ON trip_bills(user_id, trip_id, date);
   `)
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name)
@@ -383,6 +418,49 @@ function mapFixedItem(row) {
   }
 }
 
+function mapTrip(row) {
+  const budget = Number(row.budget || 0)
+  const expense = Number(row.expense || 0)
+  const income = Number(row.income || 0)
+  return {
+    id: row.id,
+    userId: row.user_id,
+    title: row.title,
+    place: row.place,
+    startDate: row.start_date,
+    endDate: row.end_date,
+    budget,
+    coverData: row.cover_data || '',
+    note: row.note || '',
+    status: row.status || 'planning',
+    expense,
+    income,
+    balance: income - expense,
+    budgetLeft: budget - expense,
+    usedRate: budget ? expense / budget : 0,
+    billCount: Number(row.bill_count || 0),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+function mapTripBill(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    tripId: row.trip_id,
+    type: row.type,
+    amount: row.amount,
+    category: row.category,
+    date: row.date,
+    payer: row.payer || '我',
+    participants: row.participants || '',
+    note: row.note || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
 async function handleApi(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`)
 
@@ -506,7 +584,9 @@ async function handleApi(req, res) {
           users.created_at,
           COALESCE((SELECT MAX(updated_at) FROM bills WHERE user_id = users.id), users.created_at),
           COALESCE((SELECT MAX(updated_at) FROM budgets WHERE user_id = users.id), users.created_at),
-          COALESCE((SELECT MAX(updated_at) FROM fixed_items WHERE user_id = users.id), users.created_at)
+          COALESCE((SELECT MAX(updated_at) FROM fixed_items WHERE user_id = users.id), users.created_at),
+          COALESCE((SELECT MAX(updated_at) FROM trip_books WHERE user_id = users.id), users.created_at),
+          COALESCE((SELECT MAX(updated_at) FROM trip_bills WHERE user_id = users.id), users.created_at)
         ) AS last_activity_at
       FROM users
       LEFT JOIN bills ON bills.user_id = users.id
@@ -622,6 +702,152 @@ async function handleApi(req, res) {
     `).run(user.id, book.id, book.name, book.icon, book.sortOrder, now, now)
     const saved = db.prepare('SELECT * FROM books WHERE user_id = ? AND id = ?').get(user.id, book.id)
     json(res, 201, { book: mapBook(saved) })
+    return
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/trips') {
+    const trips = db.prepare(`
+      SELECT
+        trip_books.*,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'expense' THEN trip_bills.amount ELSE 0 END), 0) AS expense,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'income' THEN trip_bills.amount ELSE 0 END), 0) AS income,
+        COUNT(trip_bills.id) AS bill_count
+      FROM trip_books
+      LEFT JOIN trip_bills ON trip_bills.trip_id = trip_books.id AND trip_bills.user_id = trip_books.user_id
+      WHERE trip_books.user_id = ?
+      GROUP BY trip_books.id
+      ORDER BY trip_books.start_date DESC, trip_books.updated_at DESC
+    `).all(user.id).map(mapTrip)
+    json(res, 200, { trips })
+    return
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/trips') {
+    const body = await readBody(req)
+    const title = String(body.title || '').trim()
+    const place = String(body.place || '').trim()
+    if (!title || title.length > 28) {
+      json(res, 400, { error: '旅行标题需要 1-28 个字' })
+      return
+    }
+    if (!place || place.length > 28) {
+      json(res, 400, { error: '地点需要 1-28 个字' })
+      return
+    }
+    const startDate = normalizeDate(body.startDate)
+    const rawEndDate = normalizeDate(body.endDate || startDate)
+    const endDate = rawEndDate < startDate ? startDate : rawEndDate
+    const now = nowIso()
+    const trip = {
+      id: randomId(),
+      userId: user.id,
+      title,
+      place,
+      startDate,
+      endDate,
+      budget: toMoneyNumber(body.budget),
+      coverData: String(body.coverData || '').trim(),
+      note: String(body.note || '').trim(),
+      status: ['planning', 'active', 'done'].includes(body.status) ? body.status : 'planning',
+      createdAt: now,
+      updatedAt: now
+    }
+    db.prepare(`
+      INSERT INTO trip_books (id, user_id, title, place, start_date, end_date, budget, cover_data, note, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(trip.id, trip.userId, trip.title, trip.place, trip.startDate, trip.endDate, trip.budget, trip.coverData, trip.note, trip.status, trip.createdAt, trip.updatedAt)
+    const saved = db.prepare('SELECT *, 0 AS expense, 0 AS income, 0 AS bill_count FROM trip_books WHERE id = ? AND user_id = ?')
+      .get(trip.id, user.id)
+    json(res, 201, { trip: mapTrip(saved) })
+    return
+  }
+
+  if (req.method === 'GET' && /^\/api\/trips\/[^/]+$/.test(url.pathname)) {
+    const tripId = decodeURIComponent(url.pathname.split('/').pop())
+    const trip = db.prepare(`
+      SELECT
+        trip_books.*,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'expense' THEN trip_bills.amount ELSE 0 END), 0) AS expense,
+        COALESCE(SUM(CASE WHEN trip_bills.type = 'income' THEN trip_bills.amount ELSE 0 END), 0) AS income,
+        COUNT(trip_bills.id) AS bill_count
+      FROM trip_books
+      LEFT JOIN trip_bills ON trip_bills.trip_id = trip_books.id AND trip_bills.user_id = trip_books.user_id
+      WHERE trip_books.id = ? AND trip_books.user_id = ?
+      GROUP BY trip_books.id
+    `).get(tripId, user.id)
+    if (!trip) {
+      json(res, 404, { error: '旅行账本不存在' })
+      return
+    }
+    const bills = db.prepare(`
+      SELECT *
+      FROM trip_bills
+      WHERE trip_id = ? AND user_id = ?
+      ORDER BY date DESC, created_at DESC
+    `).all(tripId, user.id).map(mapTripBill)
+    const ranking = db.prepare(`
+      SELECT category, SUM(amount) AS amount
+      FROM trip_bills
+      WHERE trip_id = ? AND user_id = ? AND type = 'expense'
+      GROUP BY category
+      ORDER BY amount DESC
+    `).all(tripId, user.id)
+    const highestExpense = db.prepare(`
+      SELECT category, amount, date, note
+      FROM trip_bills
+      WHERE trip_id = ? AND user_id = ? AND type = 'expense'
+      ORDER BY amount DESC
+      LIMIT 1
+    `).get(tripId, user.id) || null
+    json(res, 200, { trip: mapTrip(trip), bills, summary: { ranking, highestExpense } })
+    return
+  }
+
+  if (req.method === 'POST' && /^\/api\/trips\/[^/]+\/bills$/.test(url.pathname)) {
+    const parts = url.pathname.split('/').filter(Boolean)
+    const tripId = decodeURIComponent(parts[2] || '')
+    const trip = db.prepare('SELECT id FROM trip_books WHERE id = ? AND user_id = ?').get(tripId, user.id)
+    if (!trip) {
+      json(res, 404, { error: '旅行账本不存在' })
+      return
+    }
+    const body = await readBody(req)
+    const date = normalizeDate(body.date)
+    const bill = {
+      id: randomId(),
+      userId: user.id,
+      tripId,
+      type: body.type === 'income' ? 'income' : 'expense',
+      amount: toMoneyNumber(body.amount),
+      category: String(body.category || '其他').trim() || '其他',
+      date,
+      payer: String(body.payer || '我').trim() || '我',
+      participants: String(body.participants || '').trim(),
+      note: String(body.note || '').trim(),
+      createdAt: nowIso(),
+      updatedAt: nowIso()
+    }
+    if (bill.amount <= 0) {
+      json(res, 400, { error: '金额必须大于 0' })
+      return
+    }
+    db.prepare(`
+      INSERT INTO trip_bills (id, user_id, trip_id, type, amount, category, date, payer, participants, note, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(bill.id, bill.userId, bill.tripId, bill.type, bill.amount, bill.category, bill.date, bill.payer, bill.participants, bill.note, bill.createdAt, bill.updatedAt)
+    db.prepare('UPDATE trip_books SET updated_at = ? WHERE id = ? AND user_id = ?').run(nowIso(), tripId, user.id)
+    json(res, 201, { bill })
+    return
+  }
+
+  if (req.method === 'DELETE' && /^\/api\/trips\/[^/]+\/bills\/[^/]+$/.test(url.pathname)) {
+    const parts = url.pathname.split('/').filter(Boolean)
+    const tripId = decodeURIComponent(parts[2] || '')
+    const billId = decodeURIComponent(parts[4] || '')
+    const result = db.prepare('DELETE FROM trip_bills WHERE id = ? AND trip_id = ? AND user_id = ?')
+      .run(billId, tripId, user.id)
+    db.prepare('UPDATE trip_books SET updated_at = ? WHERE id = ? AND user_id = ?').run(nowIso(), tripId, user.id)
+    json(res, 200, { ok: result.changes > 0 })
     return
   }
 

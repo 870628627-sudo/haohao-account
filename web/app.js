@@ -4,6 +4,7 @@ const BEIJING_TIME_ZONE = 'Asia/Shanghai'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '零食', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
+const tripCategories = ['交通', '住宿', '餐饮', '门票', '购物', '打车', '娱乐', '伴手礼', '停车', '加油', '签证', '保险', '其他']
 const fallbackBooks = [
   { id: 'personal', name: '日常账本', icon: '🏠' },
   { id: 'travel', name: '旅行账本', icon: '🧳' }
@@ -18,6 +19,7 @@ const categoryIcons = {
   零食: '🍪',
   交通: '🚌',
   话费网费: '📶',
+  住宿: '🏨',
   日用品: '🧻',
   医疗: '💊',
   娱乐: '🎬',
@@ -25,6 +27,13 @@ const categoryIcons = {
   保卫向日葵: '🌻',
   旅游: '🧳',
   购物: '🛍️',
+  打车: '🚕',
+  门票: '🎟️',
+  伴手礼: '🎀',
+  停车: '🅿️',
+  加油: '⛽',
+  签证: '🛂',
+  保险: '🛡️',
   理发: '💈',
   人情往来: '🎁',
   工资: '💼',
@@ -48,6 +57,12 @@ const state = {
   fixedItems: [],
   books: fallbackBooks,
   activeBookId: localStorage.getItem('haohao-active-book') || 'personal',
+  trips: [],
+  activeTripId: localStorage.getItem('haohao-active-trip') || '',
+  activeTripTab: 'overview',
+  travelPanel: '',
+  travelDetail: null,
+  selectedTripCategory: '交通',
   profileTool: '',
   accountMenuOpen: false,
   accountPanel: '',
@@ -81,6 +96,36 @@ function currentBook() {
 
 function bookQuery() {
   return `bookId=${encodeURIComponent(state.activeBookId)}`
+}
+
+function isTravelBook() {
+  return state.activeBookId === 'travel'
+}
+
+function dateRangeText(startDate, endDate) {
+  if (!startDate && !endDate) return '未设置日期'
+  if (startDate === endDate) return startDate
+  return `${startDate} - ${endDate}`
+}
+
+function tripStatusText(status) {
+  return ({ planning: '计划中', active: '进行中', done: '已结束' })[status] || '计划中'
+}
+
+function tripBudgetPercent(trip) {
+  return Math.max(0, Math.round(Number(trip?.usedRate || 0) * 100))
+}
+
+function tripBudgetWidth(trip) {
+  return Math.min(100, tripBudgetPercent(trip))
+}
+
+function travelTip(trip) {
+  if (!trip) return '先建一张旅行卡片，豪豪再开始陪你盯路费。'
+  if (!Number(trip.budget || 0)) return '这趟还没设置预算，建议先给钱包画一条旅行边界。'
+  if (trip.usedRate >= 0.9) return '预算快到底了，接下来更适合看风景，少看菜单。'
+  if (trip.usedRate >= 0.5) return '旅行预算已经过半，豪豪建议把购物欲先放慢一点。'
+  return '这趟旅行预算还挺稳，可以继续保持快乐但有数。'
 }
 
 function beijingParts(date = new Date()) {
@@ -249,6 +294,19 @@ async function syncBooks() {
   return state.books
 }
 
+async function loadTravelDashboard() {
+  const data = await api('/api/trips')
+  state.trips = data.trips || []
+  if (state.activeTripId && !state.trips.some((trip) => trip.id === state.activeTripId)) {
+    state.activeTripId = ''
+    state.travelDetail = null
+    localStorage.removeItem('haohao-active-trip')
+  }
+  if (state.activeTripId) {
+    state.travelDetail = await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`)
+  }
+}
+
 function renderFixedItemList() {
   return `
     <div class="list fixed-list">
@@ -366,6 +424,232 @@ function renderAdminUserDetail(detail) {
       </div>
     </div>
   `
+}
+
+function renderTripForm() {
+  return `
+    <section class="card travel-form-card">
+      <div class="section-title">
+        <div>
+          <h3>新建旅行卡片</h3>
+          <p class="muted">地点、预算和日期先放好，账就能按这趟旅行单独记。</p>
+        </div>
+        ${state.trips.length ? '<button class="btn secondary" id="tripFormCloseBtn" type="button">收起</button>' : ''}
+      </div>
+      <form class="form" id="tripForm">
+        <div class="form-grid two">
+          <div class="field">
+            <label>旅行名称</label>
+            <input class="input" name="title" maxlength="28" placeholder="比如 杭州三日游" required />
+          </div>
+          <div class="field">
+            <label>地点</label>
+            <input class="input" name="place" maxlength="28" placeholder="比如 杭州" required />
+          </div>
+        </div>
+        <div class="form-grid three">
+          <div class="field">
+            <label>开始日期</label>
+            <input class="input" name="startDate" type="date" value="${beijingDateString()}" required />
+          </div>
+          <div class="field">
+            <label>结束日期</label>
+            <input class="input" name="endDate" type="date" value="${beijingDateString()}" required />
+          </div>
+          <div class="field">
+            <label>预算</label>
+            <input class="input" name="budget" type="number" min="0" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="field">
+          <label>备注</label>
+          <input class="input" name="note" placeholder="比如 这趟主要是吃，不许装不知道" />
+        </div>
+        <button class="btn" type="submit">创建旅行</button>
+      </form>
+    </section>
+  `
+}
+
+function renderTravelHome() {
+  const totalExpense = state.trips.reduce((sum, trip) => sum + Number(trip.expense || 0), 0)
+  const activeCount = state.trips.filter((trip) => trip.status !== 'done').length
+  return `
+    <div class="travel-workspace">
+      <section class="travel-hero">
+        <div>
+          <div class="eyebrow">旅行账本</div>
+          <h2>每一趟，都单独算清楚</h2>
+          <p>按地点创建旅行卡片，记预算、花费和小回忆。日常账本负责生活，旅行账本负责远方。</p>
+        </div>
+        <button class="btn travel-new-btn" id="tripNewBtn" type="button">新建旅行</button>
+      </section>
+
+      <div class="travel-overview-strip">
+        <div><span>旅行数</span><strong>${state.trips.length}</strong></div>
+        <div><span>进行中</span><strong>${activeCount}</strong></div>
+        <div><span>总支出</span><strong>¥${money(totalExpense)}</strong></div>
+      </div>
+
+      ${state.travelPanel === 'newTrip' || !state.trips.length ? renderTripForm() : ''}
+
+      <section class="travel-card-grid">
+        ${state.trips.length ? state.trips.map((trip) => `
+          <button class="trip-card" data-trip-open="${escapeAttr(trip.id)}" type="button">
+            <div class="trip-card-cover">
+              ${trip.coverData ? `<img src="${escapeAttr(trip.coverData)}" alt="${escapeAttr(trip.title)}" />` : `<span>${categoryIcon('旅游')}</span>`}
+            </div>
+            <div class="trip-card-body">
+              <div class="trip-card-head">
+                <strong>${escapeAttr(trip.title)}</strong>
+                <em>${tripStatusText(trip.status)}</em>
+              </div>
+              <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
+              <div class="trip-card-money">
+                <span>已花 ¥${money(trip.expense)}</span>
+                <span>${Number(trip.budget || 0) ? `预算 ¥${money(trip.budget)}` : '未设预算'}</span>
+              </div>
+              <div class="budget-progress budget-${budgetTone(trip)}"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
+              <small>${trip.note ? escapeAttr(trip.note) : travelTip(trip)}</small>
+            </div>
+          </button>
+        `).join('') : '<p class="muted travel-empty">还没有旅行卡片。先创建一趟，豪豪就能开始盯路费。</p>'}
+      </section>
+    </div>
+  `
+}
+
+function renderTripDetail() {
+  const detail = state.travelDetail
+  const trip = detail?.trip
+  if (!trip) return renderTravelHome()
+  const bills = detail.bills || []
+  const ranking = detail.summary?.ranking || []
+  const maxRank = Math.max(...ranking.map((item) => item.amount), 1)
+  const highest = detail.summary?.highestExpense
+  return `
+    <div class="travel-workspace trip-detail">
+      <section class="travel-detail-hero budget-${budgetTone(trip)}">
+        <button class="btn secondary" id="tripBackBtn" type="button">返回旅行</button>
+        <div class="travel-detail-title">
+          <span>${escapeAttr(trip.place)}</span>
+          <h2>${escapeAttr(trip.title)}</h2>
+          <p>${dateRangeText(trip.startDate, trip.endDate)} · ${tripStatusText(trip.status)}</p>
+        </div>
+        <div class="travel-detail-budget">
+          <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
+          <div><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></div>
+          <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
+        </div>
+        <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
+        <p class="travel-tip">${travelTip(trip)}</p>
+      </section>
+
+      <div class="travel-tabs">
+        ${[
+          ['overview', '总览'],
+          ['add', '记一笔'],
+          ['bills', '账单'],
+          ['stats', '统计']
+        ].map(([tab, label]) => `<button class="${state.activeTripTab === tab ? 'active' : ''}" data-trip-tab="${tab}" type="button">${label}</button>`).join('')}
+      </div>
+
+      ${state.activeTripTab === 'overview' ? `
+        <section class="travel-panel">
+          <div class="stats-summary">
+            <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
+            <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(trip.income)}</strong></div>
+            <div class="stat-tile"><span>消费笔数</span><strong>${trip.billCount || 0}</strong></div>
+            <div class="stat-tile"><span>最高单笔</span><strong>${highest ? `¥${money(highest.amount)}` : '暂无'}</strong></div>
+            <div class="stat-tile"><span>预算使用</span><strong>${tripBudgetPercent(trip)}%</strong></div>
+            <div class="stat-tile"><span>最花钱</span><strong>${ranking[0]?.category || '暂无'}</strong></div>
+          </div>
+        </section>
+      ` : ''}
+
+      ${state.activeTripTab === 'add' ? `
+        <section class="travel-panel">
+          <form class="form" id="tripBillForm">
+            <div class="amount-save-row">
+              <div class="field">
+                <label>金额</label>
+                <input class="input amount-input" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required />
+              </div>
+              <button class="btn save-inline" type="submit">保存</button>
+            </div>
+            <div class="compact-date-row">
+              <div class="field">
+                <label>日期</label>
+                <input class="input date-compact" name="date" type="date" value="${beijingDateString()}" required />
+              </div>
+            </div>
+            <div class="field">
+              <label>旅行分类</label>
+              <div class="category-grid trip-category-grid">
+                ${tripCategories.map((item) => `
+                  <button class="category-chip ${state.selectedTripCategory === item ? 'active' : ''}" type="button" data-trip-category="${item}" aria-pressed="${state.selectedTripCategory === item ? 'true' : 'false'}">
+                    <span class="category-icon">${categoryIcon(item)}</span>
+                    <span class="category-name">${item}</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+            <div class="form-grid two">
+              <div class="field">
+                <label>支付人</label>
+                <input class="input" name="payer" placeholder="默认我" />
+              </div>
+              <div class="field">
+                <label>参与人</label>
+                <input class="input" name="participants" placeholder="比如 我、朋友" />
+              </div>
+            </div>
+            <div class="field">
+              <label>备注</label>
+              <input class="input" name="note" placeholder="比如 高铁、酒店、景区门票" />
+            </div>
+          </form>
+        </section>
+      ` : ''}
+
+      ${state.activeTripTab === 'bills' ? `
+        <section class="travel-panel">
+          <div class="list">
+            ${bills.length ? bills.map((bill) => `
+              <div class="bill">
+                <div>
+                  <strong>${categoryIcon(bill.category)} ${escapeAttr(bill.category)}</strong>
+                  <small>${escapeAttr(bill.date)} · ${escapeAttr(bill.payer || '我')}${bill.participants ? ` · ${escapeAttr(bill.participants)}` : ''}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
+                </div>
+                <div class="amount expense">
+                  -¥${money(bill.amount)}
+                  <br /><button class="btn secondary" data-delete-trip-bill="${escapeAttr(bill.id)}" style="min-height: 30px; padding: 0 10px; border-radius: 10px; margin-top: 6px;">删除</button>
+                </div>
+              </div>
+            `).join('') : '<p class="muted">这趟旅行还没有账单，豪豪暂时只看风景。</p>'}
+          </div>
+        </section>
+      ` : ''}
+
+      ${state.activeTripTab === 'stats' ? `
+        <section class="travel-panel">
+          <div class="rank">
+            ${ranking.length ? ranking.map((item) => `
+              <div class="rank-row">
+                <span>${escapeAttr(item.category)}</span>
+                <div class="bar"><span style="width:${Math.max(6, Math.round(item.amount / maxRank * 100))}%"></span></div>
+                <strong>¥${money(item.amount)}</strong>
+              </div>
+            `).join('') : '<p class="muted">暂无统计，先记几笔旅行花费。</p>'}
+          </div>
+        </section>
+      ` : ''}
+    </div>
+  `
+}
+
+function renderTravelWorkspace() {
+  return state.activeTripId && state.travelDetail ? renderTripDetail() : renderTravelHome()
 }
 
 function captureBillDraft() {
@@ -624,7 +908,7 @@ function renderApp() {
   }
 
   app.innerHTML = `
-    <div class="shell app-shell" data-active-view="${state.activeView}">
+    <div class="shell app-shell" data-active-view="${state.activeView}" data-book-mode="${isTravelBook() ? 'travel' : 'daily'}">
       <header class="topbar">
         <div class="brand">
           <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
@@ -641,7 +925,8 @@ function renderApp() {
         </div>
       </header>
 
-      <div class="layout">
+      <div class="layout ${isTravelBook() ? 'travel-layout' : ''}">
+        ${isTravelBook() ? renderTravelWorkspace() : `
         <div class="stack">
           <section class="card hero view-section ${state.activeView === 'home' ? 'active-view' : ''}" data-view="home">
             <div class="hero-copy">
@@ -766,14 +1051,23 @@ function renderApp() {
 
           ${renderProfileSection(summary)}
         </aside>
+        `}
       </div>
 
       <nav class="mobile-tabbar">
-        <button class="${state.activeView === 'home' ? 'active' : ''}" data-view-tab="home"><span>⌂</span>首页</button>
-        <button class="${state.activeView === 'add' ? 'active' : ''}" data-view-tab="add"><span>＋</span>记账</button>
-        <button class="${state.activeView === 'bills' ? 'active' : ''}" data-view-tab="bills"><span>≡</span>账单</button>
-        <button class="${state.activeView === 'stats' ? 'active' : ''}" data-view-tab="stats"><span>◔</span>统计</button>
-        <button class="${state.activeView === 'profile' ? 'active' : ''}" data-view-tab="profile"><span>◇</span>固定</button>
+        ${isTravelBook() ? `
+          <button class="${!state.activeTripId ? 'active' : ''}" data-travel-home type="button"><span>⌂</span>旅行</button>
+          <button data-travel-new type="button"><span>＋</span>新建</button>
+          <button class="${state.activeTripTab === 'add' ? 'active' : ''}" data-travel-tab="add" type="button"><span>✎</span>记账</button>
+          <button class="${state.activeTripTab === 'bills' ? 'active' : ''}" data-travel-tab="bills" type="button"><span>≡</span>账单</button>
+          <button class="${state.activeTripTab === 'stats' ? 'active' : ''}" data-travel-tab="stats" type="button"><span>◔</span>统计</button>
+        ` : `
+          <button class="${state.activeView === 'home' ? 'active' : ''}" data-view-tab="home"><span>⌂</span>首页</button>
+          <button class="${state.activeView === 'add' ? 'active' : ''}" data-view-tab="add"><span>＋</span>记账</button>
+          <button class="${state.activeView === 'bills' ? 'active' : ''}" data-view-tab="bills"><span>≡</span>账单</button>
+          <button class="${state.activeView === 'stats' ? 'active' : ''}" data-view-tab="stats"><span>◔</span>统计</button>
+          <button class="${state.activeView === 'profile' ? 'active' : ''}" data-view-tab="profile"><span>◇</span>固定</button>
+        `}
       </nav>
 
       ${state.accountMenuOpen ? `
@@ -990,6 +1284,7 @@ function bindAppEvents() {
       state.accountMenuOpen = false
       state.accountPanel = ''
       state.profileTool = ''
+      state.activeView = 'home'
       try {
         await loadDashboard()
         toast(`已切换到${currentBook().name}。`)
@@ -1203,6 +1498,10 @@ function bindAppEvents() {
     state.user = null
     state.books = fallbackBooks
     state.activeBookId = localStorage.getItem('haohao-active-book') || 'personal'
+    state.trips = []
+    state.activeTripId = localStorage.getItem('haohao-active-trip') || ''
+    state.travelDetail = null
+    state.travelPanel = ''
     state.accountMenuOpen = false
     state.accountPanel = ''
     state.adminLoginOpen = false
@@ -1240,12 +1539,137 @@ function bindAppEvents() {
     })
   })
 
-  document.querySelector('#monthInput').addEventListener('change', async (event) => {
+  document.querySelector('#tripNewBtn')?.addEventListener('click', () => {
+    state.travelPanel = 'newTrip'
+    state.activeTripId = ''
+    state.travelDetail = null
+    localStorage.removeItem('haohao-active-trip')
+    renderApp()
+  })
+
+  document.querySelector('#tripFormCloseBtn')?.addEventListener('click', () => {
+    state.travelPanel = ''
+    renderApp()
+  })
+
+  document.querySelector('#tripForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    try {
+      const data = await api('/api/trips', {
+        method: 'POST',
+        body: JSON.stringify(Object.fromEntries(form.entries()))
+      })
+      state.activeTripId = data.trip.id
+      localStorage.setItem('haohao-active-trip', state.activeTripId)
+      state.activeTripTab = 'overview'
+      state.travelPanel = ''
+      await loadDashboard()
+      toast('旅行卡片已创建。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelectorAll('[data-trip-open]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      state.activeTripId = button.dataset.tripOpen
+      localStorage.setItem('haohao-active-trip', state.activeTripId)
+      state.activeTripTab = 'overview'
+      state.travelPanel = ''
+      await loadDashboard()
+    })
+  })
+
+  document.querySelector('#tripBackBtn')?.addEventListener('click', () => {
+    state.activeTripId = ''
+    state.travelDetail = null
+    localStorage.removeItem('haohao-active-trip')
+    renderApp()
+  })
+
+  document.querySelectorAll('[data-trip-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!state.activeTripId) {
+        toast('先选择一张旅行卡片。')
+        return
+      }
+      state.activeTripTab = button.dataset.tripTab
+      renderApp()
+    })
+  })
+
+  document.querySelectorAll('[data-travel-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!state.activeTripId) {
+        toast('先选择一张旅行卡片。')
+        return
+      }
+      state.activeTripTab = button.dataset.travelTab
+      renderApp()
+    })
+  })
+
+  document.querySelector('[data-travel-home]')?.addEventListener('click', () => {
+    state.activeTripId = ''
+    state.travelDetail = null
+    localStorage.removeItem('haohao-active-trip')
+    renderApp()
+  })
+
+  document.querySelector('[data-travel-new]')?.addEventListener('click', () => {
+    state.travelPanel = 'newTrip'
+    state.activeTripId = ''
+    state.travelDetail = null
+    localStorage.removeItem('haohao-active-trip')
+    renderApp()
+  })
+
+  document.querySelectorAll('[data-trip-category]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedTripCategory = button.dataset.tripCategory
+      document.querySelectorAll('[data-trip-category]').forEach((item) => {
+        item.classList.toggle('active', item.dataset.tripCategory === state.selectedTripCategory)
+        item.setAttribute('aria-pressed', item.dataset.tripCategory === state.selectedTripCategory ? 'true' : 'false')
+      })
+    })
+  })
+
+  document.querySelector('#tripBillForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!state.activeTripId) return
+    const form = new FormData(event.currentTarget)
+    const payload = Object.fromEntries(form.entries())
+    payload.type = 'expense'
+    payload.category = state.selectedTripCategory
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}/bills`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      })
+      state.activeTripTab = 'bills'
+      await loadDashboard()
+      toast('旅行账单已保存。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelectorAll('[data-delete-trip-bill]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!state.activeTripId) return
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}/bills/${encodeURIComponent(button.dataset.deleteTripBill)}`, { method: 'DELETE' })
+      toast('旅行账单已删除。')
+      await loadDashboard()
+    })
+  })
+
+  document.querySelector('#monthInput')?.addEventListener('change', async (event) => {
     state.month = state.period === 'year' ? `${event.target.value || selectedYear()}-01` : event.target.value
     await loadDashboard()
   })
 
-  document.querySelector('#statsMonthInput').addEventListener('change', async (event) => {
+  document.querySelector('#statsMonthInput')?.addEventListener('change', async (event) => {
     state.month = state.period === 'year' ? `${event.target.value || selectedYear()}-01` : event.target.value
     await loadDashboard()
   })
@@ -1276,7 +1700,7 @@ function bindAppEvents() {
     })
   })
 
-  document.querySelector('#billForm').addEventListener('submit', async (event) => {
+  document.querySelector('#billForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
     const payload = Object.fromEntries(form.entries())
@@ -1721,6 +2145,11 @@ async function createShareImage() {
 }
 
 async function loadDashboard() {
+  if (isTravelBook()) {
+    await loadTravelDashboard()
+    renderApp()
+    return
+  }
   const [summary, bills] = await Promise.all([
     api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`),
     api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`)
