@@ -1,4 +1,5 @@
 const bearSrc = '/assets/bear-ledger.jpg'
+const canvasFontFamily = '"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '零食饮料', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '小荷包', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '其他']
@@ -550,10 +551,13 @@ function renderApp() {
               </div>
               <button class="btn secondary account-close" id="shareCloseBtn" type="button">关闭</button>
             </div>
-            ${state.shareImageUrl ? `<img class="share-preview" src="${state.shareImageUrl}" alt="豪豪账单分享图" />` : '<div class="share-loading">豪豪正在排版账单...</div>'}
+            ${state.shareImageUrl ? `
+              <img class="share-preview" src="${state.shareImageUrl}" alt="豪豪账单分享图" />
+              <p class="share-tip">手机浏览器不能直接写入相册。点“打开大图”后长按图片，可保存到相册。</p>
+            ` : '<div class="share-loading">豪豪正在排版账单...</div>'}
             <div class="share-actions">
               <button class="btn" id="shareNativeBtn" type="button">系统分享</button>
-              <button class="btn secondary" id="shareDownloadBtn" type="button">保存图片</button>
+              <button class="btn secondary" id="shareOpenBtn" type="button">打开大图</button>
             </div>
           </div>
         </div>
@@ -647,12 +651,15 @@ function bindAppEvents() {
     }
   })
 
-  document.querySelector('#shareDownloadBtn')?.addEventListener('click', () => {
+  document.querySelector('#shareOpenBtn')?.addEventListener('click', () => {
     if (!state.shareImageUrl) return
-    const link = document.createElement('a')
-    link.href = state.shareImageUrl
-    link.download = `豪豪记账-${summaryLabel()}.png`
-    link.click()
+    const win = window.open()
+    if (win) {
+      win.document.write(`<title>${summaryLabel()}</title><img src="${state.shareImageUrl}" style="display:block;width:100%;max-width:900px;margin:0 auto;" alt="豪豪账单分享图" />`)
+      win.document.close()
+    } else {
+      toast('请允许弹出窗口后再打开大图。')
+    }
   })
 
   document.querySelector('#shareNativeBtn')?.addEventListener('click', async () => {
@@ -861,7 +868,7 @@ function drawText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 2) {
 }
 
 function drawPill(ctx, x, y, text, fill, color) {
-  ctx.font = '700 24px sans-serif'
+  ctx.font = `700 24px ${canvasFontFamily}`
   const width = ctx.measureText(text).width + 34
   roundedRect(ctx, x, y, width, 44, 16)
   ctx.fillStyle = fill
@@ -879,14 +886,18 @@ function drawMetric(ctx, x, y, width, label, value, color) {
   ctx.lineWidth = 2
   ctx.stroke()
   ctx.fillStyle = '#987a58'
-  ctx.font = '700 22px sans-serif'
+  ctx.font = `700 22px ${canvasFontFamily}`
   ctx.fillText(label, x + 22, y + 34)
   ctx.fillStyle = color || '#352417'
-  ctx.font = '900 34px sans-serif'
+  ctx.font = `900 34px ${canvasFontFamily}`
   ctx.fillText(value, x + 22, y + 84)
 }
 
 async function createShareImage() {
+  if (document.fonts?.ready) {
+    await document.fonts.ready
+  }
+
   const summary = state.summary || { income: 0, expense: 0, balance: 0, budget: 0, budgetLeft: 0, usedRate: 0, ranking: [] }
   const canvas = document.createElement('canvas')
   canvas.width = 900
@@ -929,23 +940,23 @@ async function createShareImage() {
     ctx.fillStyle = '#fff0c8'
     ctx.fill()
     ctx.fillStyle = '#5b351c'
-    ctx.font = '900 34px sans-serif'
+    ctx.font = `900 34px ${canvasFontFamily}`
     ctx.fillText('豪', 119, 153)
   }
 
   ctx.fillStyle = '#5b351c'
-  ctx.font = '900 42px sans-serif'
+  ctx.font = `900 42px ${canvasFontFamily}`
   ctx.fillText('豪豪记账', 214, 130)
   ctx.fillStyle = '#987a58'
-  ctx.font = '700 24px sans-serif'
+  ctx.font = `700 24px ${canvasFontFamily}`
   ctx.fillText(`${summaryLabel()} · 钱花得明明白白`, 214, 170)
 
   drawPill(ctx, 86, 232, '本期概览', '#fff0c8', '#5b351c')
   ctx.fillStyle = '#352417'
-  ctx.font = '900 56px sans-serif'
+  ctx.font = `900 56px ${canvasFontFamily}`
   ctx.fillText(summary.balance >= 0 ? '钱包暂时站稳了' : '钱包需要扶一把', 86, 326)
   ctx.fillStyle = '#6d5034'
-  ctx.font = '700 26px sans-serif'
+  ctx.font = `700 26px ${canvasFontFamily}`
   drawText(ctx, summary.balance >= 0 ? '豪豪已经把收入、支出和结余排好了队，月底少一点糊涂账。' : '本期结余为负，豪豪建议下次消费前先看一眼账单。', 86, 374, 700, 36, 2)
 
   drawMetric(ctx, 86, 454, 228, '总收入', `¥${money(summary.income)}`, '#327451')
@@ -958,10 +969,10 @@ async function createShareImage() {
   ctx.strokeStyle = '#f1e2cc'
   ctx.stroke()
   ctx.fillStyle = '#987a58'
-  ctx.font = '800 22px sans-serif'
+  ctx.font = `800 22px ${canvasFontFamily}`
   ctx.fillText('预算使用', 112, 654)
   ctx.fillStyle = '#352417'
-  ctx.font = '900 30px sans-serif'
+  ctx.font = `900 30px ${canvasFontFamily}`
   ctx.fillText(`${Math.round(summary.usedRate * 100)}%`, 682, 654)
   roundedRect(ctx, 112, 684, 650, 20, 10)
   ctx.fillStyle = '#f5eadc'
@@ -971,14 +982,14 @@ async function createShareImage() {
   ctx.fill()
 
   ctx.fillStyle = '#5b351c'
-  ctx.font = '900 32px sans-serif'
+  ctx.font = `900 32px ${canvasFontFamily}`
   ctx.fillText('支出排行', 86, 810)
   const ranking = summary.ranking.slice(0, 5)
   if (ranking.length) {
     ranking.forEach((item, index) => {
       const y = 850 + index * 72
       ctx.fillStyle = '#6d5034'
-      ctx.font = '800 24px sans-serif'
+      ctx.font = `800 24px ${canvasFontFamily}`
       ctx.fillText(item.category, 86, y + 28)
       roundedRect(ctx, 236, y + 10, 360, 18, 9)
       ctx.fillStyle = '#f5eadc'
@@ -987,17 +998,17 @@ async function createShareImage() {
       ctx.fillStyle = index === 0 ? '#f5b94c' : '#5b351c'
       ctx.fill()
       ctx.fillStyle = '#352417'
-      ctx.font = '900 24px sans-serif'
+      ctx.font = `900 24px ${canvasFontFamily}`
       ctx.fillText(`¥${money(item.amount)}`, 632, y + 28)
     })
   } else {
     ctx.fillStyle = '#987a58'
-    ctx.font = '700 26px sans-serif'
+    ctx.font = `700 26px ${canvasFontFamily}`
     ctx.fillText('暂无支出排行，豪豪暂时无瓜可吃。', 86, 864)
   }
 
   ctx.fillStyle = '#987a58'
-  ctx.font = '700 24px sans-serif'
+  ctx.font = `700 24px ${canvasFontFamily}`
   ctx.fillText('由豪豪小熊生成 · 继续认真生活，也认真记账', 86, 1168)
 
   return canvas.toDataURL('image/png')

@@ -486,11 +486,44 @@ button {
 }
 
 .stats-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  justify-content: space-between;
   gap: 10px;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.stats-toolbar .date-compact {
+  width: auto;
+  min-width: 126px;
+  height: 38px;
+  line-height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--brand);
+  font-size: 16px;
+  text-align: left;
+}
+
+.stats-toolbar .year-compact {
+  min-width: 86px;
+}
+
+.stats-toolbar .date-compact::-webkit-date-and-time-value {
+  text-align: left;
+}
+
+.stats-toolbar .date-compact::-webkit-calendar-picker-indicator {
+  margin-left: 4px;
+  opacity: 0.72;
+}
+
+.stats-toolbar .btn {
+  min-height: 38px;
+  border-radius: 14px;
+  padding: 0 14px;
 }
 
 .stats-summary {
@@ -721,6 +754,15 @@ button {
   border-radius: 20px;
   background: #fffaf4;
   box-shadow: 0 16px 36px rgba(87, 54, 24, 0.12);
+}
+
+.share-tip {
+  margin: -6px auto 16px;
+  max-width: 320px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .share-loading {
@@ -1150,11 +1192,21 @@ button {
   }
 
   .stats-toolbar {
-    grid-template-columns: 1fr;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .stats-toolbar .date-compact {
+    width: auto;
+    max-width: none !important;
+    height: 38px;
+    line-height: 38px;
+    font-size: 16px;
   }
 
   .stats-toolbar .btn {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
   }
 
   .compact-date-row {
