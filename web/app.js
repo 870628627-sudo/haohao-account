@@ -1,5 +1,6 @@
 const bearSrc = '/assets/bear-ledger.jpg'
 const canvasFontFamily = '"PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "SimHei", sans-serif'
+const BEIJING_TIME_ZONE = 'Asia/Shanghai'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '零食', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
@@ -33,7 +34,7 @@ const categoryIcons = {
 
 const state = {
   user: null,
-  month: new Date().toISOString().slice(0, 7),
+  month: beijingMonthString(),
   period: 'month',
   billType: 'expense',
   selectedCategory: '午餐',
@@ -53,7 +54,7 @@ const state = {
   heroMessageIndex: Math.floor(Math.random() * 12),
   billDraft: {
     amount: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: beijingDateString(),
     note: ''
   }
 }
@@ -66,6 +67,32 @@ function money(value) {
 
 function categoryIcon(category) {
   return categoryIcons[category] || '✨'
+}
+
+function beijingParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BEIJING_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).formatToParts(date)
+  return Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]))
+}
+
+function beijingDateString(date = new Date()) {
+  const parts = beijingParts(date)
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
+function beijingMonthString(date = new Date()) {
+  return beijingDateString(date).slice(0, 7)
+}
+
+function beijingYear() {
+  return Number(beijingDateString().slice(0, 4))
 }
 
 function budgetPercent(summary) {
@@ -112,7 +139,12 @@ function monthLabel(month) {
 
 function formatDateTime(value) {
   if (!value) return '暂无'
-  return String(value).replace('T', ' ').slice(0, 16)
+  const raw = String(value)
+  const normalized = raw.includes('T') && !/(Z|[+-]\d{2}:?\d{2})$/.test(raw) ? `${raw}Z` : raw
+  const date = new Date(normalized)
+  if (Number.isNaN(date.getTime())) return raw
+  const parts = beijingParts(date)
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`
 }
 
 function summaryLabel() {
@@ -270,7 +302,7 @@ function renderAdminUserDetail(detail) {
       <div class="admin-detail-head">
         <div>
           <h3>${escapeAttr(user.nickname)}</h3>
-          <p class="muted">${escapeAttr(user.email)} · ${formatDateTime(user.createdAt)}</p>
+          <p class="muted">${escapeAttr(user.email)} · 注册时间（北京）：${formatDateTime(user.createdAt)}</p>
         </div>
         <strong>${summary.period === 'year' ? selectedYear() + '年度' : monthLabel(summary.month)}</strong>
       </div>
@@ -318,7 +350,7 @@ function captureBillDraft() {
   const data = new FormData(form)
   state.billDraft = {
     amount: String(data.get('amount') || ''),
-    date: String(data.get('date') || new Date().toISOString().slice(0, 10)),
+    date: String(data.get('date') || beijingDateString()),
     note: String(data.get('note') || '')
   }
 }
@@ -332,7 +364,7 @@ function selectedYear() {
 }
 
 function yearOptions() {
-  const currentYear = new Date().getFullYear()
+  const currentYear = beijingYear()
   const chosenYear = Number(selectedYear())
   const years = new Set()
   for (let year = currentYear - 5; year <= currentYear + 2; year += 1) {
@@ -640,7 +672,7 @@ function renderApp() {
               <div class="compact-date-row">
                 <div class="field">
                   <label>日期</label>
-                  <input class="input date-compact" name="date" type="date" value="${escapeAttr(state.billDraft.date || new Date().toISOString().slice(0, 10))}" required />
+                  <input class="input date-compact" name="date" type="date" value="${escapeAttr(state.billDraft.date || beijingDateString())}" required />
                 </div>
               </div>
               <div class="field">
@@ -752,7 +784,7 @@ function renderApp() {
               <div class="account-details">
                 <div><span>昵称</span><strong>${escapeAttr(state.user.nickname)}</strong></div>
                 <div><span>邮箱</span><strong>${escapeAttr(state.user.email)}</strong></div>
-                <div><span>注册时间</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
+                <div><span>注册时间（北京）</span><strong>${formatDateTime(state.user.createdAt)}</strong></div>
               </div>
               <form class="form account-form" id="profileForm">
                 <label class="account-form-label">修改用户名</label>
@@ -832,7 +864,7 @@ function renderApp() {
                     <div>
                       <strong>${escapeAttr(user.nickname)}</strong>
                       <small>${escapeAttr(user.email)}</small>
-                      <small>最近操作：${formatDateTime(user.lastActivityAt || user.createdAt)}</small>
+                      <small>最近操作（北京）：${formatDateTime(user.lastActivityAt || user.createdAt)}</small>
                     </div>
                     <div>
                       <span>${user.billCount || 0} 笔</span>
@@ -1182,7 +1214,7 @@ function bindAppEvents() {
       state.activeView = 'bills'
       state.billDraft = {
         amount: '',
-        date: new Date().toISOString().slice(0, 10),
+        date: beijingDateString(),
         note: ''
       }
       await loadDashboard()
@@ -1265,7 +1297,7 @@ function bindAppEvents() {
       const item = state.fixedItems.find((target) => target.id === button.dataset.recordFixed)
       if (!item) return
 
-      const today = new Date().toISOString().slice(0, 10)
+      const today = beijingDateString()
       try {
         const data = await api('/api/bills', {
           method: 'POST',

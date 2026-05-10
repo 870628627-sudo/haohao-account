@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v42'
-const APP_VERSION = '20260511-full-ranking-tip'
+const CACHE_NAME = 'haohudget-v43'
+const APP_VERSION = '20260511-beijing-time'
 const ASSETS = [
   '/',
   '/index.html',

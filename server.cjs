@@ -14,6 +14,7 @@ const COOKIE_NAME = 'haohudget_session'
 const ADMIN_COOKIE_NAME = 'haohudget_admin'
 const ADMIN_PASSWORD = '030825'
 const ONE_WEEK = 7 * 24 * 60 * 60 * 1000
+const BEIJING_TIME_ZONE = 'Asia/Shanghai'
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
@@ -105,6 +106,25 @@ function randomId() {
 
 function nowIso() {
   return new Date().toISOString()
+}
+
+function beijingParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: BEIJING_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+  return Object.fromEntries(parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]))
+}
+
+function beijingDateString(date = new Date()) {
+  const parts = beijingParts(date)
+  return `${parts.year}-${parts.month}-${parts.day}`
+}
+
+function beijingMonthString(date = new Date()) {
+  return beijingDateString(date).slice(0, 7)
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -220,7 +240,7 @@ function requireAdmin(req, res) {
 }
 
 function normalizeMonth(value = '') {
-  return /^\d{4}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 7)
+  return /^\d{4}-\d{2}$/.test(value) ? value : beijingMonthString()
 }
 
 function normalizePeriod(value = '') {
@@ -256,7 +276,7 @@ function periodRange(period, monthValue) {
 }
 
 function normalizeDate(value = '') {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : new Date().toISOString().slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : beijingDateString()
 }
 
 function toMoneyNumber(value) {
