@@ -12,13 +12,37 @@ const state = {
   activeView: 'home',
   bills: [],
   summary: null,
-  fixedItems: []
+  fixedItems: [],
+  billDraft: {
+    amount: '',
+    date: new Date().toISOString().slice(0, 10),
+    note: ''
+  }
 }
 
 const app = document.querySelector('#app')
 
 function money(value) {
   return Number(value || 0).toFixed(2)
+}
+
+function escapeAttr(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+}
+
+function captureBillDraft() {
+  const form = document.querySelector('#billForm')
+  if (!form) return
+  const data = new FormData(form)
+  state.billDraft = {
+    amount: String(data.get('amount') || ''),
+    date: String(data.get('date') || new Date().toISOString().slice(0, 10)),
+    note: String(data.get('note') || '')
+  }
 }
 
 function periodName(period) {
@@ -225,14 +249,14 @@ function renderApp() {
               <div class="amount-save-row">
                 <div class="field">
                   <label>金额</label>
-                  <input class="input amount-input" name="amount" type="number" min="0" step="0.01" placeholder="0.00" required />
+                  <input class="input amount-input" name="amount" type="number" min="0" step="0.01" placeholder="0.00" value="${escapeAttr(state.billDraft.amount)}" required />
                 </div>
                 <button class="btn save-inline" type="submit">保存</button>
               </div>
               <div class="compact-date-row">
                 <div class="field">
                   <label>日期</label>
-                  <input class="input date-compact" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required />
+                  <input class="input date-compact" name="date" type="date" value="${escapeAttr(state.billDraft.date || new Date().toISOString().slice(0, 10))}" required />
                 </div>
               </div>
               <div class="field">
@@ -247,7 +271,7 @@ function renderApp() {
               </div>
               <div class="field">
                 <label>备注</label>
-                <input class="input" name="note" placeholder="可不填，比如食堂、地铁、奶茶" />
+                <input class="input" name="note" placeholder="可不填，比如食堂、地铁、奶茶" value="${escapeAttr(state.billDraft.note)}" />
               </div>
             </form>
           </section>
@@ -343,6 +367,7 @@ function bindAppEvents() {
 
   document.querySelectorAll('[data-view-tab]').forEach((button) => {
     button.addEventListener('click', () => {
+      captureBillDraft()
       state.activeView = button.dataset.viewTab
       renderApp()
     })
@@ -367,6 +392,7 @@ function bindAppEvents() {
 
   document.querySelectorAll('[data-type]').forEach((button) => {
     button.addEventListener('click', () => {
+      captureBillDraft()
       state.billType = button.dataset.type
       state.selectedCategory = state.billType === 'income' ? incomeCategories[0] : expenseCategories[0]
       renderApp()
@@ -376,7 +402,9 @@ function bindAppEvents() {
   document.querySelectorAll('[data-category]').forEach((button) => {
     button.addEventListener('click', () => {
       state.selectedCategory = button.dataset.category
-      renderApp()
+      document.querySelectorAll('[data-category]').forEach((item) => {
+        item.classList.toggle('active', item.dataset.category === state.selectedCategory)
+      })
     })
   })
 
@@ -391,6 +419,11 @@ function bindAppEvents() {
       judge(bearComment(data.bill))
       state.month = data.bill.month
       state.activeView = 'bills'
+      state.billDraft = {
+        amount: '',
+        date: new Date().toISOString().slice(0, 10),
+        note: ''
+      }
       await loadDashboard()
     } catch (error) {
       toast(error.message)

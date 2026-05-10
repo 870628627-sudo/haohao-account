@@ -1,4 +1,4 @@
-const CACHE_NAME = 'haohudget-v1'
+const CACHE_NAME = 'haohudget-v2'
 const ASSETS = [
   '/',
   '/index.html',
