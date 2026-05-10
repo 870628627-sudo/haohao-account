@@ -86,12 +86,26 @@ button {
   line-height: 1.1;
 }
 
+.brand-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.brand-title {
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
 .brand-username {
   max-width: 160px;
   overflow: hidden;
-  color: var(--ink);
-  font-size: 18px;
-  font-weight: 900;
+  color: #b1772e;
+  font-size: 13px;
+  font-weight: 850;
   line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1277,6 +1291,14 @@ button {
     font-size: 18px;
   }
 
+  .brand {
+    gap: 9px;
+  }
+
+  .brand-title {
+    font-size: 17px;
+  }
+
   .brand-nickname {
     max-width: 96px;
     overflow: hidden;
@@ -1287,7 +1309,7 @@ button {
 
   .brand-username {
     max-width: 112px;
-    font-size: 16px;
+    font-size: 12px;
   }
 
   .brand p,

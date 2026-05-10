@@ -464,7 +464,10 @@ function renderApp() {
           <button class="brand-bear-button" id="accountBtn" type="button" aria-label="账户详情">
             <img src="${escapeAttr(avatarSrc())}" alt="账户头像" />
           </button>
-          <strong class="brand-username">${escapeAttr(state.user.nickname)}</strong>
+          <div class="brand-copy">
+            <strong class="brand-title">豪豪记账</strong>
+            <span class="brand-username">${escapeAttr(state.user.nickname)}</span>
+          </div>
         </div>
         <div class="userbar">
           <span>${state.user.nickname} · ${state.user.email}</span>
