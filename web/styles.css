@@ -1069,7 +1069,7 @@ button {
 .travel-watermark {
   position: absolute;
   left: 50%;
-  top: 48%;
+  bottom: -96px;
   z-index: 0;
   width: min(660px, 136vw);
   aspect-ratio: 1;
@@ -1077,7 +1077,7 @@ button {
   object-fit: cover;
   opacity: 0.055;
   pointer-events: none;
-  transform: translate(-50%, -38%);
+  transform: translateX(-50%);
 }
 
 .mobile-tabbar.travel-tabbar-hidden {
@@ -2765,7 +2765,7 @@ button {
   }
 
   .travel-watermark {
-    top: 52%;
+    bottom: -78px;
     width: min(560px, 150vw);
     opacity: 0.06;
   }
