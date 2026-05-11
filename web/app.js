@@ -743,17 +743,17 @@ function renderTripDetail() {
       ` : ''}
 
       ${state.activeTripTab === 'bills' ? `
-        <section class="travel-panel">
-          <div class="list">
+        <section class="travel-panel trip-compact-panel">
+          <div class="list trip-bill-list">
             ${bills.length ? bills.map((bill) => `
-              <div class="bill">
+              <div class="bill trip-bill-row">
                 <div>
                   <strong>${categoryIcon(bill.category)} ${escapeAttr(bill.category)}</strong>
                   <small>${escapeAttr(bill.date)}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
                 </div>
                 <div class="amount expense">
                   -¥${money(bill.amount)}
-                  <br /><button class="btn secondary" data-delete-trip-bill="${escapeAttr(bill.id)}" style="min-height: 30px; padding: 0 10px; border-radius: 10px; margin-top: 6px;">删除</button>
+                  <br /><button class="btn secondary trip-delete-btn" data-delete-trip-bill="${escapeAttr(bill.id)}" type="button">删除</button>
                 </div>
               </div>
             `).join('') : '<p class="muted">这趟旅行还没有账单，豪豪暂时只看风景。</p>'}
@@ -762,7 +762,7 @@ function renderTripDetail() {
       ` : ''}
 
       ${state.activeTripTab === 'stats' ? `
-        <section class="travel-panel">
+        <section class="travel-panel trip-compact-panel trip-stats-panel">
           <div class="trip-journey-head">
             <div>
               <span>消费历程</span>

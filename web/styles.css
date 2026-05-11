@@ -1604,6 +1604,54 @@ button {
   padding: 18px;
 }
 
+.trip-compact-panel {
+  padding: 10px;
+  border-radius: 18px;
+}
+
+.trip-bill-list {
+  gap: 0;
+}
+
+.trip-bill-row {
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 2px;
+}
+
+.trip-bill-row strong {
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-bill-row small {
+  display: block;
+  max-width: 190px;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trip-bill-row .amount {
+  flex: 0 0 auto;
+  font-size: 15px;
+  line-height: 1.05;
+}
+
+.trip-delete-btn {
+  min-height: 22px;
+  margin-top: 4px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  box-shadow: none;
+}
+
 .trip-category-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -1614,6 +1662,11 @@ button {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.trip-stats-panel .trip-journey-head {
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .trip-journey-head span {
@@ -1629,6 +1682,16 @@ button {
   font-size: 22px;
 }
 
+.trip-stats-panel .trip-journey-head strong {
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+.trip-stats-panel .trip-journey-head span,
+.trip-stats-panel .trip-journey-head em {
+  font-size: 11px;
+}
+
 .trip-journey-head em,
 .trip-day-head em {
   flex: 0 0 auto;
@@ -1642,6 +1705,10 @@ button {
   gap: 14px;
 }
 
+.trip-stats-panel .trip-timeline {
+  gap: 8px;
+}
+
 .trip-timeline::before {
   content: "";
   position: absolute;
@@ -1653,11 +1720,22 @@ button {
   background: #f1e2cc;
 }
 
+.trip-stats-panel .trip-timeline::before {
+  left: 7px;
+  top: 9px;
+  bottom: 9px;
+}
+
 .trip-day {
   position: relative;
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
   gap: 12px;
+}
+
+.trip-stats-panel .trip-day {
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 7px;
 }
 
 .trip-day-marker {
@@ -1671,12 +1749,23 @@ button {
   box-shadow: 0 0 0 1px rgba(245, 185, 76, 0.35);
 }
 
+.trip-stats-panel .trip-day-marker {
+  width: 16px;
+  height: 16px;
+  border-width: 3px;
+}
+
 .trip-day-card {
   min-width: 0;
   padding: 14px;
   border: 1px solid rgba(241, 226, 204, 0.88);
   border-radius: 20px;
   background: #fff9f1;
+}
+
+.trip-stats-panel .trip-day-card {
+  padding: 8px 9px;
+  border-radius: 14px;
 }
 
 .trip-day-head {
@@ -1693,10 +1782,23 @@ button {
   font-weight: 850;
 }
 
+.trip-stats-panel .trip-day-head span {
+  font-size: 10px;
+}
+
 .trip-day-head strong {
   display: block;
   margin-top: 3px;
   font-size: 18px;
+}
+
+.trip-stats-panel .trip-day-head strong {
+  margin-top: 1px;
+  font-size: 15px;
+}
+
+.trip-stats-panel .trip-day-head em {
+  font-size: 13px;
 }
 
 .trip-day-card p {
@@ -1707,9 +1809,19 @@ button {
   line-height: 1.45;
 }
 
+.trip-stats-panel .trip-day-card p {
+  margin: 4px 0 6px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .trip-day-items {
   display: grid;
   gap: 8px;
+}
+
+.trip-stats-panel .trip-day-items {
+  gap: 5px;
 }
 
 .trip-day-item {
@@ -1723,6 +1835,13 @@ button {
   background: rgba(255, 254, 253, 0.82);
 }
 
+.trip-stats-panel .trip-day-item {
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 5px 7px;
+  border-radius: 11px;
+}
+
 .trip-day-item > span {
   display: grid;
   place-items: center;
@@ -1730,6 +1849,12 @@ button {
   height: 30px;
   border-radius: 999px;
   background: rgba(245, 185, 76, 0.2);
+}
+
+.trip-stats-panel .trip-day-item > span {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
 }
 
 .trip-day-item strong,
@@ -1740,16 +1865,30 @@ button {
   white-space: nowrap;
 }
 
+.trip-stats-panel .trip-day-item strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
+
 .trip-day-item small {
   margin-top: 2px;
   color: var(--muted);
   font-size: 12px;
 }
 
+.trip-stats-panel .trip-day-item small {
+  margin-top: 1px;
+  font-size: 10px;
+}
+
 .trip-day-item em {
   font-style: normal;
   font-weight: 950;
   white-space: nowrap;
+}
+
+.trip-stats-panel .trip-day-item em {
+  font-size: 13px;
 }
 
 .trip-journey-summary {
@@ -1761,6 +1900,14 @@ button {
   font-size: 13px;
   font-weight: 850;
   line-height: 1.45;
+}
+
+.trip-stats-panel .trip-journey-summary {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 13px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .account-menu-item {
@@ -2546,6 +2693,19 @@ button {
     font-size: 16px;
   }
 
+  .trip-compact-panel {
+    padding: 8px;
+  }
+
+  .trip-bill-row {
+    min-height: 42px;
+    padding: 7px 1px;
+  }
+
+  .trip-bill-row small {
+    max-width: 160px;
+  }
+
   .trip-status-form.hero-status-editor {
     grid-template-columns: 1fr;
   }
@@ -2610,15 +2770,31 @@ button {
     border-radius: 18px;
   }
 
+  .trip-stats-panel .trip-day-card {
+    padding: 7px 8px;
+    border-radius: 13px;
+  }
+
   .trip-day-item {
     grid-template-columns: 28px minmax(0, 1fr) auto;
     gap: 8px;
     padding: 8px;
   }
 
+  .trip-stats-panel .trip-day-item {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 6px;
+    padding: 5px 6px;
+  }
+
   .trip-day-item > span {
     width: 28px;
     height: 28px;
+  }
+
+  .trip-stats-panel .trip-day-item > span {
+    width: 22px;
+    height: 22px;
   }
 
   .hero-stats {
