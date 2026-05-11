@@ -495,15 +495,9 @@ function renderTripForm() {
         <button class="btn secondary" id="tripFormCloseBtn" type="button">关闭</button>
       </div>
       <form class="form" id="tripForm">
-        <div class="form-grid two">
-          <div class="field">
-            <label>旅行名称</label>
-            <input class="input" name="title" maxlength="28" placeholder="比如 杭州三日游" required />
-          </div>
-          <div class="field">
-            <label>地点</label>
-            <input class="input" name="place" maxlength="28" placeholder="比如 杭州" required />
-          </div>
+        <div class="field">
+          <label>旅行名称</label>
+          <input class="input" name="title" maxlength="28" placeholder="比如 杭州三日游" required />
         </div>
         <div class="form-grid two travel-date-grid">
           <div class="field">
@@ -585,7 +579,7 @@ function renderTravelHome() {
                 <strong>${escapeAttr(trip.title)}</strong>
                 <em>${tripStatusText(trip.status)}</em>
               </div>
-              <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
+              <p>${dateRangeText(trip.startDate, trip.endDate)}</p>
               <div class="trip-card-money">
                 <span>已花 ¥${money(trip.expense)}</span>
                 <span>${Number(trip.budget || 0) ? `预算 ¥${money(trip.budget)}` : '未设预算'}</span>
@@ -616,7 +610,7 @@ function renderTripDetail() {
             <span>旅行</span>
             <div class="travel-title-row">
               <h2>${escapeAttr(trip.title)}</h2>
-              <p>${escapeAttr(trip.place)} · ${dateRangeText(trip.startDate, trip.endDate)}</p>
+              <p>${dateRangeText(trip.startDate, trip.endDate)}</p>
             </div>
           </div>
           <div class="travel-detail-budget">

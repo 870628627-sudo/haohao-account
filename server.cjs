@@ -725,13 +725,13 @@ async function handleApi(req, res) {
   if (req.method === 'POST' && url.pathname === '/api/trips') {
     const body = await readBody(req)
     const title = String(body.title || '').trim()
-    const place = String(body.place || '').trim()
+    const place = String(body.place || '').trim() || title
     if (!title || title.length > 28) {
       json(res, 400, { error: '旅行标题需要 1-28 个字' })
       return
     }
-    if (!place || place.length > 28) {
-      json(res, 400, { error: '地点需要 1-28 个字' })
+    if (place.length > 28) {
+      json(res, 400, { error: '旅行名称最多 28 个字' })
       return
     }
     const startDate = normalizeDate(body.startDate)
