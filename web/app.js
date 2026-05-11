@@ -1024,6 +1024,7 @@ function bearComment(record) {
 function renderAuth(mode = 'login') {
   app.innerHTML = `
     <section class="auth-page">
+      <img class="auth-watermark" src="${bearSrc}" alt="" aria-hidden="true" />
       <div class="card auth-card">
         <div class="auth-art">
           <div class="eyebrow">豪豪记账</div>
@@ -1686,6 +1687,7 @@ function bindAppEvents() {
   })
 
   document.querySelector('#logoutBtn').addEventListener('click', async () => {
+    if (!confirm('确定要退出登录吗？')) return
     await api('/api/logout', { method: 'POST' })
     state.user = null
     state.books = fallbackBooks

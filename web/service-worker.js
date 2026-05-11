@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v73'
-const APP_VERSION = '20260511-clean-trip-overview'
+const CACHE_NAME = 'haohudget-v74'
+const APP_VERSION = '20260511-auth-watermark'
 const ASSETS = [
   '/',
   '/index.html',
