@@ -1023,6 +1023,16 @@ button {
   box-shadow: inset 0 0 0 1px rgba(245, 185, 76, 0.28);
 }
 
+.book-option.switching {
+  border-color: rgba(91, 53, 28, 0.28);
+  background: #fff7e8;
+  opacity: 0.86;
+}
+
+.book-option:disabled {
+  cursor: wait;
+}
+
 .book-option-icon {
   display: grid;
   place-items: center;

@@ -64,6 +64,7 @@ const state = {
   fixedItems: [],
   books: fallbackBooks,
   activeBookId: localStorage.getItem('haohao-active-book') || 'personal',
+  switchingBookId: '',
   trips: [],
   activeTripId: localStorage.getItem('haohao-active-trip') || '',
   activeTripTab: 'overview',
@@ -1182,9 +1183,9 @@ function renderApp() {
               </div>
               <div class="book-options">
                 ${state.books.map((book) => `
-                  <button class="book-option ${state.activeBookId === book.id ? 'active' : ''}" data-book-id="${escapeAttr(book.id)}" type="button">
+                  <button class="book-option ${state.activeBookId === book.id ? 'active' : ''} ${state.switchingBookId === book.id ? 'switching' : ''}" data-book-id="${escapeAttr(book.id)}" type="button" ${state.switchingBookId ? 'disabled' : ''}>
                     <span class="book-option-icon">${escapeAttr(book.icon || '📒')}</span>
-                    <strong>${escapeAttr(book.name)}</strong>
+                    <strong>${state.switchingBookId === book.id ? '切换中...' : escapeAttr(book.name)}</strong>
                   </button>
                 `).join('')}
               </div>
@@ -1380,18 +1381,26 @@ function bindAppEvents() {
     button.addEventListener('click', async () => {
       const nextBookId = button.dataset.bookId
       if (!nextBookId || nextBookId === state.activeBookId) return
+      const nextBook = state.books.find((book) => book.id === nextBookId)
       captureBillDraft()
       state.activeBookId = nextBookId
+      state.switchingBookId = nextBookId
       localStorage.setItem('haohao-active-book', state.activeBookId)
-      state.accountMenuOpen = false
       state.accountPanel = ''
       state.profileTool = ''
       state.activeView = 'home'
+      toast(`正在切换到${nextBook?.name || '新账本'}...`)
+      renderApp()
       try {
         await loadDashboard()
+        state.switchingBookId = ''
+        state.accountMenuOpen = false
         toast(`已切换到${currentBook().name}。`)
+        renderApp()
       } catch (error) {
+        state.switchingBookId = ''
         toast(error.message)
+        renderApp()
       }
     })
   })
@@ -1600,6 +1609,7 @@ function bindAppEvents() {
     state.user = null
     state.books = fallbackBooks
     state.activeBookId = localStorage.getItem('haohao-active-book') || 'personal'
+    state.switchingBookId = ''
     state.trips = []
     state.activeTripId = localStorage.getItem('haohao-active-trip') || ''
     state.travelDetail = null
