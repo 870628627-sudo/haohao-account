@@ -1055,8 +1055,29 @@ button {
 }
 
 .travel-workspace {
+  position: relative;
+  isolation: isolate;
   display: grid;
   gap: 14px;
+}
+
+.travel-workspace > :not(.travel-watermark) {
+  position: relative;
+  z-index: 1;
+}
+
+.travel-watermark {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  z-index: 0;
+  width: min(660px, 136vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0.055;
+  pointer-events: none;
+  transform: translate(-50%, -38%);
 }
 
 .mobile-tabbar.travel-tabbar-hidden {
@@ -2741,6 +2762,12 @@ button {
 
   .travel-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .travel-watermark {
+    top: 52%;
+    width: min(560px, 150vw);
+    opacity: 0.06;
   }
 
   .trip-card {

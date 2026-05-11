@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v76'
-const APP_VERSION = '20260511-raised-prompts'
+const CACHE_NAME = 'haohudget-v77'
+const APP_VERSION = '20260511-travel-watermark'
 const ASSETS = [
   '/',
   '/index.html',

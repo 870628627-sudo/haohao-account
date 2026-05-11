@@ -628,6 +628,7 @@ function renderTravelHome() {
   const activeCount = state.trips.filter((trip) => trip.status !== 'done').length
   return `
     <div class="travel-workspace">
+      <img class="travel-watermark" src="${bearSrc}" alt="" aria-hidden="true" />
       <section class="travel-hero">
         <div>
           <div class="eyebrow">旅行账本</div>
@@ -672,8 +673,10 @@ function renderTripDetail() {
   const cities = detail.cities || []
   const ranking = detail.summary?.ranking || []
   const timeline = buildTripTimeline(trip, bills)
+  const highest = detail.summary?.highestExpense
   return `
     <div class="travel-workspace trip-detail">
+      ${state.activeTripTab === 'add' ? '' : `<img class="travel-watermark" src="${bearSrc}" alt="" aria-hidden="true" />`}
       ${state.activeTripTab === 'overview' ? `
         <section class="travel-detail-hero budget-${budgetTone(trip)}">
           <div class="travel-detail-title">
