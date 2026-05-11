@@ -747,14 +747,12 @@ function renderTripDetail() {
           <div class="list trip-bill-list">
             ${bills.length ? bills.map((bill) => `
               <div class="bill trip-bill-row">
-                <div>
+                <div class="trip-bill-main">
                   <strong>${categoryIcon(bill.category)} ${escapeAttr(bill.category)}</strong>
                   <small>${escapeAttr(bill.date)}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
                 </div>
-                <div class="amount expense">
-                  -¥${money(bill.amount)}
-                  <br /><button class="btn secondary trip-delete-btn" data-delete-trip-bill="${escapeAttr(bill.id)}" type="button">删除</button>
-                </div>
+                <span class="trip-bill-amount expense">-¥${money(bill.amount)}</span>
+                <button class="btn secondary trip-delete-btn" data-delete-trip-bill="${escapeAttr(bill.id)}" type="button">删除</button>
               </div>
             `).join('') : '<p class="muted">这趟旅行还没有账单，豪豪暂时只看风景。</p>'}
           </div>

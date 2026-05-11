@@ -1614,39 +1614,47 @@ button {
 }
 
 .trip-bill-row {
+  display: grid;
+  grid-template-columns: minmax(68px, 0.9fr) minmax(74px, 1.25fr) auto auto;
+  align-items: center;
   gap: 8px;
-  min-height: 46px;
-  padding: 8px 2px;
+  min-height: 34px;
+  padding: 5px 2px;
+}
+
+.trip-bill-main {
+  display: contents;
+}
+
+.trip-bill-row strong,
+.trip-bill-row small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trip-bill-row strong {
-  overflow: hidden;
-  font-size: 14px;
-  line-height: 1.15;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 13px;
+  line-height: 1.1;
 }
 
 .trip-bill-row small {
-  display: block;
-  max-width: 190px;
-  overflow: hidden;
   font-size: 11px;
-  line-height: 1.25;
-  text-overflow: ellipsis;
+  line-height: 1.1;
+}
+
+.trip-bill-amount {
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1;
+  text-align: right;
   white-space: nowrap;
 }
 
-.trip-bill-row .amount {
-  flex: 0 0 auto;
-  font-size: 15px;
-  line-height: 1.05;
-}
-
 .trip-delete-btn {
-  min-height: 22px;
-  margin-top: 4px;
-  padding: 0 8px;
+  min-height: 24px;
+  padding: 0 7px;
   border-radius: 8px;
   font-size: 11px;
   box-shadow: none;
@@ -2698,12 +2706,23 @@ button {
   }
 
   .trip-bill-row {
-    min-height: 42px;
-    padding: 7px 1px;
+    grid-template-columns: minmax(58px, 0.85fr) minmax(58px, 1fr) auto auto;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 1px;
   }
 
-  .trip-bill-row small {
-    max-width: 160px;
+  .trip-bill-row strong {
+    font-size: 12px;
+  }
+
+  .trip-bill-row small,
+  .trip-delete-btn {
+    font-size: 10px;
+  }
+
+  .trip-bill-amount {
+    font-size: 13px;
   }
 
   .trip-status-form.hero-status-editor {
