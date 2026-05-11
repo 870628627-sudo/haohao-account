@@ -800,8 +800,15 @@ async function handleApi(req, res) {
     const current = db.prepare('SELECT * FROM trip_books WHERE id = ? AND user_id = ?').get(tripId, user.id)
     const budget = Object.prototype.hasOwnProperty.call(body, 'budget') ? toMoneyNumber(body.budget) : current.budget
     const status = ['planning', 'active', 'done'].includes(body.status) ? body.status : current.status
-    db.prepare('UPDATE trip_books SET budget = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?')
-      .run(budget, status, nowIso(), tripId, user.id)
+    const nextStartDate = Object.prototype.hasOwnProperty.call(body, 'startDate')
+      ? normalizeDate(body.startDate)
+      : current.start_date
+    const rawEndDate = Object.prototype.hasOwnProperty.call(body, 'endDate')
+      ? normalizeDate(body.endDate || nextStartDate)
+      : current.end_date
+    const nextEndDate = rawEndDate < nextStartDate ? nextStartDate : rawEndDate
+    db.prepare('UPDATE trip_books SET start_date = ?, end_date = ?, budget = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(nextStartDate, nextEndDate, budget, status, nowIso(), tripId, user.id)
     const saved = db.prepare(`
       SELECT
         trip_books.*,
@@ -814,6 +821,13 @@ async function handleApi(req, res) {
       GROUP BY trip_books.id
     `).get(tripId, user.id)
     json(res, 200, { trip: mapTrip(saved) })
+    return
+  }
+
+  if (req.method === 'DELETE' && /^\/api\/trips\/[^/]+$/.test(url.pathname)) {
+    const tripId = decodeURIComponent(url.pathname.split('/').pop())
+    const result = db.prepare('DELETE FROM trip_books WHERE id = ? AND user_id = ?').run(tripId, user.id)
+    json(res, 200, { ok: result.changes > 0 })
     return
   }
 

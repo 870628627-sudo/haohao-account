@@ -1157,10 +1157,19 @@ button {
   white-space: nowrap;
 }
 
-.travel-title-row p {
+.travel-date-button {
   flex: 0 0 auto;
+  max-width: 48%;
+  min-height: 30px;
+  padding: 0 9px;
+  overflow: hidden;
+  border: 1px solid rgba(241, 226, 204, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 254, 253, 0.72);
+  color: #6d5034;
   font-size: 14px;
   font-weight: 850;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1311,7 +1320,14 @@ button {
   margin-bottom: 6px;
 }
 
-.trip-status-pill {
+.travel-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.trip-status-pill,
+.trip-delete-pill {
   flex: 0 0 auto;
   min-height: 32px;
   padding: 0 12px;
@@ -1322,6 +1338,12 @@ button {
   font-size: 13px;
   font-weight: 950;
   box-shadow: 4px 6px 14px rgba(87, 54, 24, 0.08);
+}
+
+.trip-delete-pill {
+  border-color: rgba(226, 108, 91, 0.22);
+  background: rgba(255, 244, 240, 0.88);
+  color: var(--bad);
 }
 
 .travel-detail-budget {
@@ -2648,7 +2670,8 @@ button {
     align-items: center;
   }
 
-  .travel-title-row p {
+  .travel-date-button {
+    max-width: 46%;
     font-size: 12px;
   }
 

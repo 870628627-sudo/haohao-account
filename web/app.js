@@ -548,6 +548,32 @@ function renderTripBudgetForm() {
   `
 }
 
+function renderTripDateForm() {
+  const trip = state.travelDetail?.trip
+  if (!trip) return ''
+  return `
+    <div class="travel-modal-card compact">
+      <div class="travel-modal-head">
+        <h3>调整旅行日期</h3>
+        <button class="btn secondary" id="tripDateCloseBtn" type="button">关闭</button>
+      </div>
+      <form class="form" id="tripDateForm">
+        <div class="form-grid two travel-date-grid">
+          <div class="field">
+            <label>开始日期</label>
+            <input class="input travel-date-input" name="startDate" type="date" value="${escapeAttr(trip.startDate)}" required />
+          </div>
+          <div class="field">
+            <label>结束日期</label>
+            <input class="input travel-date-input" name="endDate" type="date" value="${escapeAttr(trip.endDate)}" required />
+          </div>
+        </div>
+        <button class="btn" type="submit">保存日期</button>
+      </form>
+    </div>
+  `
+}
+
 function renderTripCityEditorForm() {
   const detail = state.travelDetail
   const trip = detail?.trip
@@ -586,6 +612,8 @@ function renderTravelSheet() {
     ? renderTripBudgetForm()
     : state.travelPanel === 'cities'
       ? renderTripCityEditorForm()
+      : state.travelPanel === 'dates'
+        ? renderTripDateForm()
       : renderTripForm()
   return `
     <div class="travel-sheet" role="dialog" aria-modal="true" aria-label="旅行设置">
@@ -651,11 +679,14 @@ function renderTripDetail() {
           <div class="travel-detail-title">
             <div class="travel-detail-meta">
               <span>旅行</span>
-              <button class="trip-status-pill" data-trip-status-toggle type="button">${tripStatusText(trip.status)}</button>
+              <div class="travel-detail-actions">
+                <button class="trip-status-pill" data-trip-status-toggle type="button">${tripStatusText(trip.status)}</button>
+                <button class="trip-delete-pill" data-trip-delete type="button">删除</button>
+              </div>
             </div>
             <div class="travel-title-row">
               <h2>${escapeAttr(trip.title)}</h2>
-              <p>${dateRangeText(trip.startDate, trip.endDate)}</p>
+              <button class="travel-date-button" data-trip-dates type="button">${dateRangeText(trip.startDate, trip.endDate)}</button>
             </div>
           </div>
           <div class="travel-detail-budget">
@@ -1733,6 +1764,11 @@ function bindAppEvents() {
     renderApp()
   })
 
+  document.querySelector('#tripDateCloseBtn')?.addEventListener('click', () => {
+    state.travelPanel = ''
+    renderApp()
+  })
+
   document.querySelector('.travel-sheet')?.addEventListener('click', (event) => {
     if (event.target.classList.contains('travel-sheet')) {
       state.travelPanel = ''
@@ -1788,6 +1824,29 @@ function bindAppEvents() {
     renderApp()
   })
 
+  document.querySelector('[data-trip-dates]')?.addEventListener('click', () => {
+    state.travelPanel = 'dates'
+    renderApp()
+  })
+
+  document.querySelector('[data-trip-delete]')?.addEventListener('click', async () => {
+    if (!state.activeTripId) return
+    const tripTitle = state.travelDetail?.trip?.title || '这趟旅行'
+    if (!confirm(`确定删除「${tripTitle}」吗？这趟旅行的账单和城市节点也会一起删除。`)) return
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`, { method: 'DELETE' })
+      state.activeTripId = ''
+      state.travelDetail = null
+      state.activeTripTab = 'overview'
+      state.travelPanel = ''
+      localStorage.removeItem('haohao-active-trip')
+      await loadDashboard()
+      toast('旅行已删除。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
   document.querySelector('#tripBudgetForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     if (!state.activeTripId) return
@@ -1800,6 +1859,26 @@ function bindAppEvents() {
       state.travelPanel = ''
       await loadDashboard()
       toast('旅行预算已更新。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelector('#tripDateForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!state.activeTripId) return
+    const form = new FormData(event.currentTarget)
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          startDate: form.get('startDate'),
+          endDate: form.get('endDate')
+        })
+      })
+      state.travelPanel = ''
+      await loadDashboard()
+      toast('旅行日期已更新。')
     } catch (error) {
       toast(error.message)
     }
