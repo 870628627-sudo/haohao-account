@@ -4,7 +4,7 @@ const BEIJING_TIME_ZONE = 'Asia/Shanghai'
 const expenseCategories = ['早餐', '午餐', '晚餐', '水果', '奶茶', '零食', '交通', '话费网费', '日用品', '医疗', '娱乐', '王者荣耀', '保卫向日葵', '旅游', '购物', '理发', '人情往来', '其他']
 const incomeCategories = ['工资', '生活费', '零花钱', '兼职', '红包', '退款', '其他']
 const fixedCategories = ['水电燃气', '房租', '物业费', '停车费', '话费网费', '会员订阅', '小荷包', '其他']
-const tripCategories = ['公交', '大巴', '火车', '飞机', '租车', '停车费', '住宿', '餐饮', '门票', '购物', '打车', '娱乐', '伴手礼', '加油', '签证', '保险', '其他']
+const tripCategories = ['公交', '大巴', '火车', '飞机', '租车', '停车费', '住宿', '餐饮', '门票', '购物', '项目', '打车', '娱乐', '伴手礼', '加油', '签证', '保险', '其他']
 const fallbackBooks = [
   { id: 'personal', name: '日常账本', icon: '🏠' },
   { id: 'travel', name: '旅行账本', icon: '🧳' }
@@ -36,6 +36,7 @@ const categoryIcons = {
   购物: '🛍️',
   打车: '🚕',
   门票: '🎟️',
+  项目: '🧩',
   伴手礼: '🎀',
   停车: '🅿️',
   加油: '⛽',
@@ -1022,6 +1023,7 @@ function bearComment(record) {
 }
 
 function renderAuth(mode = 'login') {
+  const savedEmail = localStorage.getItem('haohao-last-email') || ''
   app.innerHTML = `
     <section class="auth-page">
       <img class="auth-watermark" src="${bearSrc}" alt="" aria-hidden="true" />
@@ -1044,7 +1046,7 @@ function renderAuth(mode = 'login') {
             </div>
             <div class="field">
               <label>邮箱</label>
-              <input class="input" name="email" type="email" placeholder="you@example.com" required />
+              <input class="input" name="email" type="email" placeholder="you@example.com" value="${escapeAttr(savedEmail)}" autocomplete="email" required />
             </div>
             <div class="field">
               <label>密码</label>
@@ -1069,6 +1071,7 @@ function renderAuth(mode = 'login') {
         method: 'POST',
         body: JSON.stringify(Object.fromEntries(form.entries()))
       })
+      localStorage.setItem('haohao-last-email', String(form.get('email') || '').trim())
       state.user = data.user
       refreshHeroMessage()
       await syncBooks()

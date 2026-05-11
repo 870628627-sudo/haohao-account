@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v74'
-const APP_VERSION = '20260511-auth-watermark'
+const CACHE_NAME = 'haohudget-v75'
+const APP_VERSION = '20260511-project-email'
 const ASSETS = [
   '/',
   '/index.html',
