@@ -1314,10 +1314,49 @@ button {
   margin-bottom: 14px;
 }
 
-.trip-status-form > span {
+.trip-status-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff9f1;
+  color: var(--ink);
+  text-align: left;
+  box-shadow: 6px 8px 18px rgba(87, 54, 24, 0.08);
+}
+
+.trip-status-display span,
+.trip-status-form > span,
+.trip-status-edit-head span {
   color: var(--muted);
   font-size: 13px;
   font-weight: 850;
+}
+
+.trip-status-display strong {
+  color: var(--brand);
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.trip-status-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trip-status-edit-head .btn {
+  min-height: 36px;
+  border-radius: 13px;
+  padding: 0 12px;
+  font-size: 13px;
 }
 
 .trip-status-options {

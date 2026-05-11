@@ -70,6 +70,8 @@ const state = {
   activeTripTab: 'overview',
   travelPanel: '',
   travelDetail: null,
+  tripStatusEditing: false,
+  tripStatusDraft: '',
   selectedTripCategory: '公交',
   profileTool: '',
   accountMenuOpen: false,
@@ -625,18 +627,28 @@ function renderTripDetail() {
           <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
         </section>
         <section class="travel-panel">
-          <form class="trip-status-form" id="tripStatusForm">
-            <span>当前状态</span>
-            <div class="trip-status-options">
-              ${[
-                ['planning', '计划中'],
-                ['active', '进行中'],
-                ['done', '已完成']
-              ].map(([status, label]) => `
-                <button class="${trip.status === status ? 'active' : ''}" name="status" value="${status}" type="submit">${label}</button>
-              `).join('')}
-            </div>
-          </form>
+          ${state.tripStatusEditing ? `
+            <form class="trip-status-form editing" id="tripStatusForm">
+              <div class="trip-status-edit-head">
+                <span>当前状态</span>
+                <button class="btn secondary" type="submit">保存状态</button>
+              </div>
+              <div class="trip-status-options">
+                ${[
+                  ['planning', '计划中'],
+                  ['active', '进行中'],
+                  ['done', '已完成']
+                ].map(([status, label]) => `
+                  <button class="${(state.tripStatusDraft || trip.status) === status ? 'active' : ''}" data-trip-status-choice="${status}" type="button">${label}</button>
+                `).join('')}
+              </div>
+            </form>
+          ` : `
+            <button class="trip-status-display" data-trip-status-toggle type="button">
+              <span>当前状态</span>
+              <strong>${tripStatusText(trip.status)}</strong>
+            </button>
+          `}
           <div class="stats-summary">
             <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
             <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(trip.income)}</strong></div>
@@ -1713,6 +1725,8 @@ function bindAppEvents() {
       localStorage.setItem('haohao-active-trip', state.activeTripId)
       state.activeTripTab = 'overview'
       state.travelPanel = ''
+      state.tripStatusEditing = false
+      state.tripStatusDraft = ''
       await loadDashboard()
     })
   })
@@ -1746,16 +1760,30 @@ function bindAppEvents() {
     }
   })
 
+  document.querySelector('[data-trip-status-toggle]')?.addEventListener('click', () => {
+    state.tripStatusEditing = true
+    state.tripStatusDraft = state.travelDetail?.trip?.status || 'planning'
+    renderApp()
+  })
+
+  document.querySelectorAll('[data-trip-status-choice]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.tripStatusDraft = button.dataset.tripStatusChoice
+      renderApp()
+    })
+  })
+
   document.querySelector('#tripStatusForm')?.addEventListener('submit', async (event) => {
     event.preventDefault()
     if (!state.activeTripId) return
-    const submitter = event.submitter
-    const status = submitter?.value || state.travelDetail?.trip?.status || 'planning'
+    const status = state.tripStatusDraft || state.travelDetail?.trip?.status || 'planning'
     try {
       await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       })
+      state.tripStatusEditing = false
+      state.tripStatusDraft = ''
       await loadDashboard()
       toast(`旅行状态已更新为${tripStatusText(status)}。`)
     } catch (error) {
@@ -1769,6 +1797,7 @@ function bindAppEvents() {
         toast('先选择一张旅行卡片。')
         return
       }
+      state.tripStatusEditing = false
       state.activeTripTab = button.dataset.tripTab
       renderApp()
     })
@@ -1780,6 +1809,7 @@ function bindAppEvents() {
         toast('先选择一张旅行卡片。')
         return
       }
+      state.tripStatusEditing = false
       state.activeTripTab = button.dataset.travelTab
       renderApp()
     })
@@ -1788,6 +1818,8 @@ function bindAppEvents() {
   document.querySelector('[data-travel-home]')?.addEventListener('click', () => {
     state.activeTripId = ''
     state.travelDetail = null
+    state.tripStatusEditing = false
+    state.tripStatusDraft = ''
     localStorage.removeItem('haohao-active-trip')
     renderApp()
   })
@@ -1796,6 +1828,8 @@ function bindAppEvents() {
     state.travelPanel = 'newTrip'
     state.activeTripId = ''
     state.travelDetail = null
+    state.tripStatusEditing = false
+    state.tripStatusDraft = ''
     localStorage.removeItem('haohao-active-trip')
     renderApp()
   })

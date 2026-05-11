@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v62'
-const APP_VERSION = '20260511-trip-status-cards'
+const CACHE_NAME = 'haohudget-v63'
+const APP_VERSION = '20260511-trip-status-edit'
 const ASSETS = [
   '/',
   '/index.html',
