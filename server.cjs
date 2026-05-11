@@ -139,12 +139,25 @@ function initDb() {
       FOREIGN KEY (trip_id) REFERENCES trip_books(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS trip_cities (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      trip_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (trip_id) REFERENCES trip_books(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_bills_user_month ON bills(user_id, month);
     CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
     CREATE INDEX IF NOT EXISTS idx_books_user ON books(user_id, archived, sort_order);
     CREATE INDEX IF NOT EXISTS idx_fixed_items_user ON fixed_items(user_id, enabled);
     CREATE INDEX IF NOT EXISTS idx_trip_books_user ON trip_books(user_id, start_date, updated_at);
     CREATE INDEX IF NOT EXISTS idx_trip_bills_trip ON trip_bills(user_id, trip_id, date);
+    CREATE INDEX IF NOT EXISTS idx_trip_cities_trip ON trip_cities(user_id, trip_id, sort_order);
   `)
 
   const userColumns = db.prepare('PRAGMA table_info(users)').all().map((column) => column.name)
@@ -461,6 +474,18 @@ function mapTripBill(row) {
   }
 }
 
+function mapTripCity(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    tripId: row.trip_id,
+    name: row.name,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
 async function handleApi(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`)
 
@@ -586,7 +611,8 @@ async function handleApi(req, res) {
           COALESCE((SELECT MAX(updated_at) FROM budgets WHERE user_id = users.id), users.created_at),
           COALESCE((SELECT MAX(updated_at) FROM fixed_items WHERE user_id = users.id), users.created_at),
           COALESCE((SELECT MAX(updated_at) FROM trip_books WHERE user_id = users.id), users.created_at),
-          COALESCE((SELECT MAX(updated_at) FROM trip_bills WHERE user_id = users.id), users.created_at)
+          COALESCE((SELECT MAX(updated_at) FROM trip_bills WHERE user_id = users.id), users.created_at),
+          COALESCE((SELECT MAX(updated_at) FROM trip_cities WHERE user_id = users.id), users.created_at)
         ) AS last_activity_at
       FROM users
       LEFT JOIN bills ON bills.user_id = users.id
@@ -813,6 +839,12 @@ async function handleApi(req, res) {
       WHERE trip_id = ? AND user_id = ?
       ORDER BY date DESC, created_at DESC
     `).all(tripId, user.id).map(mapTripBill)
+    const cities = db.prepare(`
+      SELECT *
+      FROM trip_cities
+      WHERE trip_id = ? AND user_id = ?
+      ORDER BY sort_order ASC, created_at ASC
+    `).all(tripId, user.id).map(mapTripCity)
     const ranking = db.prepare(`
       SELECT category, SUM(amount) AS amount
       FROM trip_bills
@@ -827,7 +859,53 @@ async function handleApi(req, res) {
       ORDER BY amount DESC
       LIMIT 1
     `).get(tripId, user.id) || null
-    json(res, 200, { trip: mapTrip(trip), bills, summary: { ranking, highestExpense } })
+    json(res, 200, { trip: mapTrip(trip), bills, cities, summary: { ranking, highestExpense } })
+    return
+  }
+
+  if (req.method === 'POST' && /^\/api\/trips\/[^/]+\/cities$/.test(url.pathname)) {
+    const parts = url.pathname.split('/').filter(Boolean)
+    const tripId = decodeURIComponent(parts[2] || '')
+    const trip = db.prepare('SELECT id FROM trip_books WHERE id = ? AND user_id = ?').get(tripId, user.id)
+    if (!trip) {
+      json(res, 404, { error: '旅行账本不存在' })
+      return
+    }
+    const body = await readBody(req)
+    const name = String(body.name || '').trim()
+    if (!name || name.length > 18) {
+      json(res, 400, { error: '城市名需要 1-18 个字' })
+      return
+    }
+    const now = nowIso()
+    const sortOrder = Number(db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM trip_cities WHERE trip_id = ? AND user_id = ?')
+      .get(tripId, user.id).next_order || 0)
+    const city = {
+      id: randomId(),
+      userId: user.id,
+      tripId,
+      name,
+      sortOrder,
+      createdAt: now,
+      updatedAt: now
+    }
+    db.prepare(`
+      INSERT INTO trip_cities (id, user_id, trip_id, name, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(city.id, city.userId, city.tripId, city.name, city.sortOrder, city.createdAt, city.updatedAt)
+    db.prepare('UPDATE trip_books SET updated_at = ? WHERE id = ? AND user_id = ?').run(now, tripId, user.id)
+    json(res, 201, { city })
+    return
+  }
+
+  if (req.method === 'DELETE' && /^\/api\/trips\/[^/]+\/cities\/[^/]+$/.test(url.pathname)) {
+    const parts = url.pathname.split('/').filter(Boolean)
+    const tripId = decodeURIComponent(parts[2] || '')
+    const cityId = decodeURIComponent(parts[4] || '')
+    const result = db.prepare('DELETE FROM trip_cities WHERE id = ? AND trip_id = ? AND user_id = ?')
+      .run(cityId, tripId, user.id)
+    db.prepare('UPDATE trip_books SET updated_at = ? WHERE id = ? AND user_id = ?').run(nowIso(), tripId, user.id)
+    json(res, 200, { ok: result.changes > 0 })
     return
   }
 

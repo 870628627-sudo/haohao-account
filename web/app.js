@@ -599,6 +599,7 @@ function renderTripDetail() {
   const trip = detail?.trip
   if (!trip) return renderTravelHome()
   const bills = detail.bills || []
+  const cities = detail.cities || []
   const ranking = detail.summary?.ranking || []
   const timeline = buildTripTimeline(trip, bills)
   const highest = detail.summary?.highestExpense
@@ -621,6 +622,27 @@ function renderTripDetail() {
           <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
         </section>
         <section class="travel-panel">
+          <div class="trip-city-plan">
+            <div class="trip-city-head">
+              <div>
+                <span>旅行城市</span>
+                <strong>慢慢补齐这趟路</strong>
+              </div>
+            </div>
+            <form class="trip-city-form" id="tripCityForm">
+              <input class="input" name="name" maxlength="18" placeholder="添加城市名，比如 杭州" required />
+              <button class="btn secondary" type="submit">添加</button>
+            </form>
+            <div class="trip-city-route">
+              ${cities.length ? cities.map((city, index) => `
+                <div class="trip-city-node">
+                  <span>${index + 1}</span>
+                  <strong>${escapeAttr(city.name)}</strong>
+                  <button class="btn secondary" data-delete-trip-city="${escapeAttr(city.id)}" type="button">删除</button>
+                </div>
+              `).join('') : '<p class="muted">还没有城市节点。把这趟旅行经过的城市一个个放进来，之后回看会很有画面。</p>'}
+            </div>
+          </div>
           ${state.tripStatusEditing ? `
             <form class="trip-status-form editing" id="tripStatusForm">
               <div class="trip-status-edit-head">
@@ -1752,6 +1774,35 @@ function bindAppEvents() {
     } catch (error) {
       toast(error.message)
     }
+  })
+
+  document.querySelector('#tripCityForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!state.activeTripId) return
+    const form = new FormData(event.currentTarget)
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}/cities`, {
+        method: 'POST',
+        body: JSON.stringify({ name: form.get('name') })
+      })
+      await loadDashboard()
+      toast('城市节点已添加。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelectorAll('[data-delete-trip-city]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!state.activeTripId) return
+      try {
+        await api(`/api/trips/${encodeURIComponent(state.activeTripId)}/cities/${encodeURIComponent(button.dataset.deleteTripCity)}`, { method: 'DELETE' })
+        await loadDashboard()
+        toast('城市节点已删除。')
+      } catch (error) {
+        toast(error.message)
+      }
+    })
   })
 
   document.querySelector('[data-trip-status-toggle]')?.addEventListener('click', () => {
