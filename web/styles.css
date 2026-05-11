@@ -1143,10 +1143,8 @@ button {
 }
 
 .travel-title-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -1158,8 +1156,8 @@ button {
 }
 
 .travel-date-button {
-  flex: 0 0 auto;
-  max-width: 48%;
+  justify-self: start;
+  max-width: 100%;
   min-height: 30px;
   padding: 0 9px;
   overflow: hidden;
@@ -2666,13 +2664,10 @@ button {
     font-size: 25px;
   }
 
-  .travel-title-row {
-    align-items: center;
-  }
-
   .travel-date-button {
-    max-width: 46%;
-    font-size: 12px;
+    width: 100%;
+    min-height: 32px;
+    font-size: 13px;
   }
 
   .travel-overview-strip {
