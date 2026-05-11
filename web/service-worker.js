@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v60'
-const APP_VERSION = '20260511-book-switch-feedback'
+const CACHE_NAME = 'haohudget-v61'
+const APP_VERSION = '20260511-long-category-fit'
 const ASSETS = [
   '/',
   '/index.html',

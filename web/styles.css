@@ -1987,6 +1987,10 @@ button {
   box-shadow: 0 8px 18px rgba(91, 53, 28, 0.14);
 }
 
+.category-chip-long .category-name {
+  font-size: 12px;
+}
+
 .category-icon {
   display: grid;
   flex: 0 0 auto;

@@ -1105,7 +1105,7 @@ function renderApp() {
                 <label>分类</label>
                 <div class="category-grid">
                   ${categories.map((item) => `
-                    <button class="category-chip ${state.selectedCategory === item ? 'active' : ''}" type="button" data-category="${item}" aria-pressed="${state.selectedCategory === item ? 'true' : 'false'}">
+                    <button class="category-chip ${state.selectedCategory === item ? 'active' : ''} ${item === '保卫向日葵' ? 'category-chip-long' : ''}" type="button" data-category="${item}" aria-pressed="${state.selectedCategory === item ? 'true' : 'false'}">
                       <span class="category-icon">${categoryIcon(item)}</span>
                       <span class="category-name">${item}</span>
                     </button>
