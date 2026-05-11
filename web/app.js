@@ -543,9 +543,45 @@ function renderTripBudgetForm() {
   `
 }
 
+function renderTripCityEditorForm() {
+  const detail = state.travelDetail
+  const trip = detail?.trip
+  if (!trip) return ''
+  const cities = detail.cities || []
+  return `
+    <div class="travel-modal-card compact">
+      <div class="travel-modal-head">
+        <h3>编辑旅行城市</h3>
+        <button class="btn secondary" id="tripCityCloseBtn" type="button">关闭</button>
+      </div>
+      <div class="trip-city-editor-copy">
+        <strong>${escapeAttr(trip.title)}</strong>
+        <span>把走过或计划去的城市按顺序放进来，之后回看会更有路线感。</span>
+      </div>
+      <form class="trip-city-form" id="tripCityForm">
+        <input class="input" name="name" maxlength="18" placeholder="添加城市名，比如 杭州" required />
+        <button class="btn secondary" type="submit">添加</button>
+      </form>
+      <div class="trip-city-route editor">
+        ${cities.length ? cities.map((city, index) => `
+          <div class="trip-city-node editable">
+            <span>${index + 1}</span>
+            <strong>${escapeAttr(city.name)}</strong>
+            <button class="btn secondary" data-delete-trip-city="${escapeAttr(city.id)}" type="button">删除</button>
+          </div>
+        `).join('') : '<p class="muted">还没有城市节点。先加一个城市，慢慢把这趟旅行串起来。</p>'}
+      </div>
+    </div>
+  `
+}
+
 function renderTravelSheet() {
   if (!isTravelBook() || !state.travelPanel) return ''
-  const body = state.travelPanel === 'budget' ? renderTripBudgetForm() : renderTripForm()
+  const body = state.travelPanel === 'budget'
+    ? renderTripBudgetForm()
+    : state.travelPanel === 'cities'
+      ? renderTripCityEditorForm()
+      : renderTripForm()
   return `
     <div class="travel-sheet" role="dialog" aria-modal="true" aria-label="旅行设置">
       ${body}
@@ -628,17 +664,13 @@ function renderTripDetail() {
                 <span>旅行城市</span>
                 <strong>慢慢补齐这趟路</strong>
               </div>
+              <button class="btn secondary" data-trip-cities type="button">编辑城市</button>
             </div>
-            <form class="trip-city-form" id="tripCityForm">
-              <input class="input" name="name" maxlength="18" placeholder="添加城市名，比如 杭州" required />
-              <button class="btn secondary" type="submit">添加</button>
-            </form>
-            <div class="trip-city-route">
+            <div class="trip-city-route display">
               ${cities.length ? cities.map((city, index) => `
                 <div class="trip-city-node">
                   <span>${index + 1}</span>
                   <strong>${escapeAttr(city.name)}</strong>
-                  <button class="btn secondary" data-delete-trip-city="${escapeAttr(city.id)}" type="button">删除</button>
                 </div>
               `).join('') : '<p class="muted">还没有城市节点。把这趟旅行经过的城市一个个放进来，之后回看会很有画面。</p>'}
             </div>
@@ -1709,6 +1741,11 @@ function bindAppEvents() {
     renderApp()
   })
 
+  document.querySelector('#tripCityCloseBtn')?.addEventListener('click', () => {
+    state.travelPanel = ''
+    renderApp()
+  })
+
   document.querySelector('.travel-sheet')?.addEventListener('click', (event) => {
     if (event.target.classList.contains('travel-sheet')) {
       state.travelPanel = ''
@@ -1756,6 +1793,11 @@ function bindAppEvents() {
 
   document.querySelector('[data-trip-budget]')?.addEventListener('click', () => {
     state.travelPanel = 'budget'
+    renderApp()
+  })
+
+  document.querySelector('[data-trip-cities]')?.addEventListener('click', () => {
+    state.travelPanel = 'cities'
     renderApp()
   })
 
