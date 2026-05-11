@@ -770,9 +770,11 @@ async function handleApi(req, res) {
       return
     }
     const body = await readBody(req)
-    const budget = toMoneyNumber(body.budget)
-    db.prepare('UPDATE trip_books SET budget = ?, updated_at = ? WHERE id = ? AND user_id = ?')
-      .run(budget, nowIso(), tripId, user.id)
+    const current = db.prepare('SELECT * FROM trip_books WHERE id = ? AND user_id = ?').get(tripId, user.id)
+    const budget = Object.prototype.hasOwnProperty.call(body, 'budget') ? toMoneyNumber(body.budget) : current.budget
+    const status = ['planning', 'active', 'done'].includes(body.status) ? body.status : current.status
+    db.prepare('UPDATE trip_books SET budget = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?')
+      .run(budget, status, nowIso(), tripId, user.id)
     const saved = db.prepare(`
       SELECT
         trip_books.*,

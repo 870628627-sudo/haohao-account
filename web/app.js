@@ -625,6 +625,18 @@ function renderTripDetail() {
           <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
         </section>
         <section class="travel-panel">
+          <form class="trip-status-form" id="tripStatusForm">
+            <span>当前状态</span>
+            <div class="trip-status-options">
+              ${[
+                ['planning', '计划中'],
+                ['active', '进行中'],
+                ['done', '已完成']
+              ].map(([status, label]) => `
+                <button class="${trip.status === status ? 'active' : ''}" name="status" value="${status}" type="submit">${label}</button>
+              `).join('')}
+            </div>
+          </form>
           <div class="stats-summary">
             <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
             <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(trip.income)}</strong></div>
@@ -1729,6 +1741,23 @@ function bindAppEvents() {
       state.travelPanel = ''
       await loadDashboard()
       toast('旅行预算已更新。')
+    } catch (error) {
+      toast(error.message)
+    }
+  })
+
+  document.querySelector('#tripStatusForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault()
+    if (!state.activeTripId) return
+    const submitter = event.submitter
+    const status = submitter?.value || state.travelDetail?.trip?.status || 'planning'
+    try {
+      await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status })
+      })
+      await loadDashboard()
+      toast(`旅行状态已更新为${tripStatusText(status)}。`)
     } catch (error) {
       toast(error.message)
     }

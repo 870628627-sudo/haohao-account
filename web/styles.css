@@ -1222,7 +1222,13 @@ button {
   background: rgba(255, 254, 253, 0.9);
   color: var(--ink);
   text-align: left;
-  box-shadow: 0 12px 34px rgba(87, 54, 24, 0.06);
+  box-shadow: 8px 10px 22px rgba(87, 54, 24, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.trip-card:active {
+  transform: translateY(1px);
+  box-shadow: 4px 6px 16px rgba(87, 54, 24, 0.1);
 }
 
 .trip-card-body {
@@ -1261,11 +1267,17 @@ button {
 .trip-card p,
 .trip-card small,
 .trip-card-money {
+  display: flex;
+  align-items: center;
   margin: 0;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
   line-height: 1.35;
+}
+
+.trip-card-money span {
+  white-space: nowrap;
 }
 
 .trip-card .budget-progress {
@@ -1294,6 +1306,42 @@ button {
 .travel-detail-budget {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trip-status-form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.trip-status-form > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.trip-status-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff9f1;
+}
+
+.trip-status-options button {
+  height: 38px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.trip-status-options button.active {
+  background: var(--brand);
+  color: #fff9f1;
 }
 
 .travel-detail-budget div,
@@ -2230,7 +2278,7 @@ button {
   }
 
   .travel-hero {
-    display: grid;
+    display: flex;
     padding: 18px;
     border-radius: 22px;
   }
@@ -2281,8 +2329,7 @@ button {
   }
 
   .trip-card-money {
-    display: grid;
-    gap: 2px;
+    gap: 8px;
   }
 
   .travel-detail-hero {
