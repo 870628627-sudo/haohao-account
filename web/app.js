@@ -671,7 +671,6 @@ function renderTripDetail() {
   const cities = detail.cities || []
   const ranking = detail.summary?.ranking || []
   const timeline = buildTripTimeline(trip, bills)
-  const highest = detail.summary?.highestExpense
   return `
     <div class="travel-workspace trip-detail">
       ${state.activeTripTab === 'overview' ? `
@@ -690,9 +689,9 @@ function renderTripDetail() {
             </div>
           </div>
           <div class="travel-detail-budget">
-            <div><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
-            <button class="travel-budget-button" data-trip-budget type="button"><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></button>
-            <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
+            <div class="trip-money-spent"><span>已花</span><strong>¥${money(trip.expense)}</strong></div>
+            <button class="travel-budget-button trip-money-budget" data-trip-budget type="button"><span>预算</span><strong>${Number(trip.budget || 0) ? `¥${money(trip.budget)}` : '未设置'}</strong></button>
+            <div class="${Number(trip.budgetLeft || 0) >= 0 ? 'trip-money-left good' : 'trip-money-left bad'}"><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
           </div>
           <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
           ${state.tripStatusEditing ? `
@@ -726,14 +725,6 @@ function renderTripDetail() {
                 </div>
               `).join('') : '<p class="muted">还没有城市节点。把这趟旅行经过的城市一个个放进来，之后回看会很有画面。</p>'}
             </div>
-          </div>
-          <div class="stats-summary">
-            <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
-            <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(trip.income)}</strong></div>
-            <div class="stat-tile"><span>消费笔数</span><strong>${trip.billCount || 0}</strong></div>
-            <div class="stat-tile"><span>最高单笔</span><strong>${highest ? `¥${money(highest.amount)}` : '暂无'}</strong></div>
-            <div class="stat-tile"><span>预算使用</span><strong>${tripBudgetPercent(trip)}%</strong></div>
-            <div class="stat-tile"><span>最花钱</span><strong>${ranking[0]?.category || '暂无'}</strong></div>
           </div>
         </section>
       ` : ''}
