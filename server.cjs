@@ -2,6 +2,7 @@ const crypto = require('crypto')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
+const zlib = require('zlib')
 const { DatabaseSync } = require('node:sqlite')
 
 const PORT = Number(process.env.PORT || 5177)
@@ -1226,14 +1227,29 @@ function serveStatic(req, res) {
     '.png': 'image/png',
     '.svg': 'image/svg+xml'
   }
-  const cacheControl = ['.html', '.css', '.js', '.webmanifest'].includes(ext)
+  const versionedStatic = ['.css', '.js'].includes(ext) && url.searchParams.has('v')
+  const cacheControl = versionedStatic
+    ? 'public, max-age=31536000, immutable'
+    : ['.html', '.webmanifest'].includes(ext) || path.basename(filePath) === 'service-worker.js'
     ? 'no-cache'
     : 'public, max-age=86400'
-
-  res.writeHead(200, {
-    'Content-Type': types[ext] || 'application/octet-stream',
+  const contentType = types[ext] || 'application/octet-stream'
+  const compressible = ['.html', '.css', '.js', '.svg', '.webmanifest'].includes(ext)
+  const acceptsGzip = /\bgzip\b/.test(req.headers['accept-encoding'] || '')
+  const headers = {
+    'Content-Type': contentType,
     'Cache-Control': cacheControl
-  })
+  }
+
+  if (compressible && acceptsGzip) {
+    headers['Content-Encoding'] = 'gzip'
+    headers.Vary = 'Accept-Encoding'
+    res.writeHead(200, headers)
+    fs.createReadStream(filePath).pipe(zlib.createGzip()).pipe(res)
+    return
+  }
+
+  res.writeHead(200, headers)
   fs.createReadStream(filePath).pipe(res)
 }
 

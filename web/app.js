@@ -356,7 +356,12 @@ async function syncBooks() {
 }
 
 async function loadTravelDashboard() {
-  const data = await api('/api/trips')
+  const [data, detail] = await Promise.all([
+    api('/api/trips'),
+    state.activeTripId
+      ? api(`/api/trips/${encodeURIComponent(state.activeTripId)}`).catch(() => null)
+      : Promise.resolve(null)
+  ])
   state.trips = data.trips || []
   if (state.activeTripId && !state.trips.some((trip) => trip.id === state.activeTripId)) {
     state.activeTripId = ''
@@ -364,7 +369,7 @@ async function loadTravelDashboard() {
     localStorage.removeItem('haohao-active-trip')
   }
   if (state.activeTripId) {
-    state.travelDetail = await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`)
+    state.travelDetail = detail || await api(`/api/trips/${encodeURIComponent(state.activeTripId)}`)
   }
 }
 
@@ -644,7 +649,10 @@ function renderTripDetail() {
       ${state.activeTripTab === 'overview' ? `
         <section class="travel-detail-hero budget-${budgetTone(trip)}">
           <div class="travel-detail-title">
-            <span>旅行</span>
+            <div class="travel-detail-meta">
+              <span>旅行</span>
+              <button class="trip-status-pill" data-trip-status-toggle type="button">${tripStatusText(trip.status)}</button>
+            </div>
             <div class="travel-title-row">
               <h2>${escapeAttr(trip.title)}</h2>
               <p>${dateRangeText(trip.startDate, trip.endDate)}</p>
@@ -656,13 +664,26 @@ function renderTripDetail() {
             <div><span>剩余</span><strong>¥${money(trip.budgetLeft)}</strong></div>
           </div>
           <div class="budget-progress"><span style="width:${tripBudgetWidth(trip)}%"></span></div>
+          ${state.tripStatusEditing ? `
+            <form class="trip-status-form hero-status-editor" id="tripStatusForm">
+              <div class="trip-status-options">
+                ${[
+                  ['planning', '计划中'],
+                  ['active', '进行中'],
+                  ['done', '已完成']
+                ].map(([status, label]) => `
+                  <button class="${(state.tripStatusDraft || trip.status) === status ? 'active' : ''}" data-trip-status-choice="${status}" type="button">${label}</button>
+                `).join('')}
+              </div>
+              <button class="btn secondary" type="submit">保存</button>
+            </form>
+          ` : ''}
         </section>
         <section class="travel-panel">
           <div class="trip-city-plan">
             <div class="trip-city-head">
               <div>
                 <span>旅行城市</span>
-                <strong>慢慢补齐这趟路</strong>
               </div>
               <button class="btn secondary" data-trip-cities type="button">编辑城市</button>
             </div>
@@ -675,28 +696,6 @@ function renderTripDetail() {
               `).join('') : '<p class="muted">还没有城市节点。把这趟旅行经过的城市一个个放进来，之后回看会很有画面。</p>'}
             </div>
           </div>
-          ${state.tripStatusEditing ? `
-            <form class="trip-status-form editing" id="tripStatusForm">
-              <div class="trip-status-edit-head">
-                <span>当前状态</span>
-                <button class="btn secondary" type="submit">保存状态</button>
-              </div>
-              <div class="trip-status-options">
-                ${[
-                  ['planning', '计划中'],
-                  ['active', '进行中'],
-                  ['done', '已完成']
-                ].map(([status, label]) => `
-                  <button class="${(state.tripStatusDraft || trip.status) === status ? 'active' : ''}" data-trip-status-choice="${status}" type="button">${label}</button>
-                `).join('')}
-              </div>
-            </form>
-          ` : `
-            <button class="trip-status-display" data-trip-status-toggle type="button">
-              <span>当前状态</span>
-              <strong>${tripStatusText(trip.status)}</strong>
-            </button>
-          `}
           <div class="stats-summary">
             <div class="stat-tile primary"><span>总支出</span><strong>¥${money(trip.expense)}</strong></div>
             <div class="stat-tile"><span>总收入</span><strong class="income">¥${money(trip.income)}</strong></div>
@@ -735,16 +734,6 @@ function renderTripDetail() {
                 `).join('')}
               </div>
             </div>
-            <div class="form-grid two">
-              <div class="field">
-                <label>支付人</label>
-                <input class="input" name="payer" placeholder="默认我" />
-              </div>
-              <div class="field">
-                <label>参与人</label>
-                <input class="input" name="participants" placeholder="比如 我、朋友" />
-              </div>
-            </div>
             <div class="field">
               <label>备注</label>
               <input class="input" name="note" placeholder="比如 高铁、酒店、景区门票" />
@@ -760,7 +749,7 @@ function renderTripDetail() {
               <div class="bill">
                 <div>
                   <strong>${categoryIcon(bill.category)} ${escapeAttr(bill.category)}</strong>
-                  <small>${escapeAttr(bill.date)} · ${escapeAttr(bill.payer || '我')}${bill.participants ? ` · ${escapeAttr(bill.participants)}` : ''}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
+                  <small>${escapeAttr(bill.date)}${bill.note ? ` · ${escapeAttr(bill.note)}` : ''}</small>
                 </div>
                 <div class="amount expense">
                   -¥${money(bill.amount)}
@@ -800,7 +789,7 @@ function renderTripDetail() {
                         <span>${categoryIcon(bill.category)}</span>
                         <div>
                           <strong>${escapeAttr(bill.category)}</strong>
-                          <small>${escapeAttr(bill.note || bill.payer || '旅行消费')}</small>
+                          <small>${escapeAttr(bill.note || '旅行消费')}</small>
                         </div>
                         <em class="${bill.type === 'income' ? 'income' : 'expense'}">${bill.type === 'income' ? '+' : '-'}¥${money(bill.amount)}</em>
                       </div>
@@ -2448,9 +2437,9 @@ async function loadDashboard() {
   }
   const [summary, bills] = await Promise.all([
     api(`/api/summary?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`),
-    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`)
+    api(`/api/bills?month=${encodeURIComponent(state.month)}&period=${encodeURIComponent(state.period)}&${bookQuery()}`),
+    syncFixedItems()
   ])
-  await syncFixedItems()
   state.summary = summary
   state.bills = bills.bills
   renderApp()

@@ -1303,6 +1303,27 @@ button {
   font-weight: 900;
 }
 
+.travel-detail-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.trip-status-pill {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(241, 226, 204, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 254, 253, 0.82);
+  color: var(--brand);
+  font-size: 13px;
+  font-weight: 950;
+  box-shadow: 4px 6px 14px rgba(87, 54, 24, 0.08);
+}
+
 .travel-detail-budget {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1436,6 +1457,19 @@ button {
   display: grid;
   gap: 10px;
   margin-bottom: 14px;
+}
+
+.trip-status-form.hero-status-editor {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  margin: 0;
+}
+
+.trip-status-form.hero-status-editor .btn {
+  min-height: 38px;
+  border-radius: 13px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 
 .trip-status-display {
@@ -2510,6 +2544,10 @@ button {
 
   .travel-detail-budget strong {
     font-size: 16px;
+  }
+
+  .trip-status-form.hero-status-editor {
+    grid-template-columns: 1fr;
   }
 
   .travel-tabs {
