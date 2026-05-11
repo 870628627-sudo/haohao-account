@@ -1,5 +1,5 @@
-const CACHE_NAME = 'haohudget-v69'
-const APP_VERSION = '20260511-one-line-bills'
+const CACHE_NAME = 'haohudget-v70'
+const APP_VERSION = '20260511-bill-font-up'
 const ASSETS = [
   '/',
   '/index.html',

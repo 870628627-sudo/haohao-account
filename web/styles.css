@@ -1618,8 +1618,8 @@ button {
   grid-template-columns: minmax(68px, 0.9fr) minmax(74px, 1.25fr) auto auto;
   align-items: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 5px 2px;
+  min-height: 38px;
+  padding: 6px 2px;
 }
 
 .trip-bill-main {
@@ -1635,17 +1635,17 @@ button {
 }
 
 .trip-bill-row strong {
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.1;
 }
 
 .trip-bill-row small {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.1;
 }
 
 .trip-bill-amount {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 950;
   line-height: 1;
   text-align: right;
@@ -1653,10 +1653,10 @@ button {
 }
 
 .trip-delete-btn {
-  min-height: 24px;
-  padding: 0 7px;
+  min-height: 26px;
+  padding: 0 8px;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: 12px;
   box-shadow: none;
 }
 
@@ -2708,21 +2708,24 @@ button {
   .trip-bill-row {
     grid-template-columns: minmax(58px, 0.85fr) minmax(58px, 1fr) auto auto;
     gap: 6px;
-    min-height: 32px;
-    padding: 4px 1px;
+    min-height: 36px;
+    padding: 5px 1px;
   }
 
   .trip-bill-row strong {
-    font-size: 12px;
+    font-size: 14px;
   }
 
-  .trip-bill-row small,
-  .trip-delete-btn {
-    font-size: 10px;
+  .trip-bill-row small {
+    font-size: 11px;
   }
 
   .trip-bill-amount {
-    font-size: 13px;
+    font-size: 15px;
+  }
+
+  .trip-delete-btn {
+    font-size: 11px;
   }
 
   .trip-status-form.hero-status-editor {
