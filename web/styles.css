@@ -1067,9 +1067,9 @@ button {
 }
 
 .travel-watermark {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: -96px;
+  bottom: -118px;
   z-index: 0;
   width: min(660px, 136vw);
   aspect-ratio: 1;
@@ -2765,7 +2765,7 @@ button {
   }
 
   .travel-watermark {
-    bottom: -78px;
+    bottom: -96px;
     width: min(560px, 150vw);
     opacity: 0.06;
   }
